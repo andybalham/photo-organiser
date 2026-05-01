@@ -7,6 +7,7 @@ public partial class MainForm : Form
 {
     private readonly IFileScanner _scanner = new FileScanner();
     private ScanResult? _lastScan;
+    private IReadOnlyList<ConflictResolution>? _conflictResolutions;
     private CancellationTokenSource? _cts;
 
     public MainForm()
@@ -58,6 +59,7 @@ public partial class MainForm : Form
         SetControlsEnabled(false);
         _rtbLog.Clear();
         _lastScan = null;
+        _conflictResolutions = null;
         _lblSummary.Text = "Scanning…";
         _progressBar.Value = 0;
         _lblProgress.Text = string.Empty;
@@ -89,11 +91,11 @@ public partial class MainForm : Form
             if (toCopy == 0 && conflicts == 0)
             {
                 _lblSummary.Text = "Nothing to copy.";
-                _btnStartCopy.Enabled = false;
             }
             else
             {
-                _btnStartCopy.Enabled = true;
+                if (conflicts > 0)
+                    ShowConflictDialog();
             }
         }
         catch (OperationCanceledException)
@@ -113,6 +115,41 @@ public partial class MainForm : Form
         }
     }
 
+    private void BtnReviewConflicts_Click(object sender, EventArgs e)
+    {
+        ShowConflictDialog();
+    }
+
+    private void ShowConflictDialog()
+    {
+        if (_lastScan == null) return;
+
+        var conflictFiles = _lastScan.ToCopy.Where(f => f.ConflictExists).ToList();
+        if (conflictFiles.Count == 0) return;
+
+        using var dlg = new ConflictResolutionForm(conflictFiles);
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            _conflictResolutions = dlg.Resolutions;
+            UpdateConflictLog();
+        }
+        // Cancel: leave _conflictResolutions as-is (no copy starts without resolution)
+        UpdateStartCopyState();
+    }
+
+    private void UpdateConflictLog()
+    {
+        if (_conflictResolutions == null) return;
+        foreach (var r in _conflictResolutions)
+        {
+            var label = r.Action == ConflictAction.Rename
+                ? $"[CONFLICT→RENAME] {r.Candidate.FileName} → {Path.GetFileName(r.Candidate.DestinationPath)}"
+                : $"[CONFLICT→SKIP]   {r.Candidate.FileName}";
+            var colour = r.Action == ConflictAction.Rename ? Color.DarkBlue : Color.Gray;
+            AppendLog(label, colour);
+        }
+    }
+
     private void BtnStartCopy_Click(object sender, EventArgs e)
     {
         // Phase 6: implement copy logic here
@@ -125,13 +162,32 @@ public partial class MainForm : Form
 
     private void SetControlsEnabled(bool enabled)
     {
-        _btnBrowseSource.Enabled = enabled;
-        _btnBrowseDest.Enabled   = enabled;
-        _btnAnalyse.Enabled      = enabled;
-        _btnStartCopy.Enabled    = enabled && _lastScan != null &&
-                                   (_lastScan.ToCopy.Any(f => !f.ConflictExists) ||
-                                    _lastScan.ToCopy.Any(f => f.ConflictExists));
-        _btnCancel.Enabled       = !enabled;
+        _btnBrowseSource.Enabled    = enabled;
+        _btnBrowseDest.Enabled      = enabled;
+        _btnAnalyse.Enabled         = enabled;
+        _btnCancel.Enabled          = !enabled;
+
+        UpdateStartCopyState();
+
+        var hasConflicts = _lastScan?.ToCopy.Any(f => f.ConflictExists) ?? false;
+        _btnReviewConflicts.Enabled = enabled && hasConflicts;
+    }
+
+    private void UpdateStartCopyState()
+    {
+        if (_lastScan == null)
+        {
+            _btnStartCopy.Enabled = false;
+            return;
+        }
+
+        var cleanCopyCount  = _lastScan.ToCopy.Count(f => !f.ConflictExists);
+        var conflictCount   = _lastScan.ToCopy.Count(f => f.ConflictExists);
+        var resolvedCount   = _conflictResolutions?.Count ?? 0;
+        var allResolved     = conflictCount == 0 || resolvedCount == conflictCount;
+
+        // Start Copy enabled when: clean files exist OR all conflicts have been resolved
+        _btnStartCopy.Enabled = (cleanCopyCount > 0 || resolvedCount > 0) && allResolved;
     }
 
     private void AppendLog(string text, Color color)

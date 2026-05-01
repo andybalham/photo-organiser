@@ -8,7 +8,7 @@
 | 2 | Main form UI layout | ✅ Done |
 | 3 | File scanning service | ✅ Done |
 | 4 | Pre-copy analysis & confirmation | ✅ Done |
-| 5 | Conflict resolution dialog | ⬜ Not started |
+| 5 | Conflict resolution dialog | ✅ Done |
 | 6 | Copy engine | ⬜ Not started |
 | 7 | Post-copy summary | ⬜ Not started |
 | 8 | Polish & edge cases | ⬜ Not started |
@@ -50,6 +50,18 @@
 - Conflict detection: same filename + same size → `ToSkip`; same filename + different size → `ConflictExists = true`
 - `FileScannerTests.cs` — 8 tests all passing
 - `dotnet test` — 54 passed, 0 failed
+
+## Phase 5 — Done
+
+- `Models/ConflictAction.cs` — enum: `Skip`, `Rename`
+- `Models/ConflictResolution.cs` — record: `(FileCandidate Candidate, ConflictAction Action)`
+- `Models/FileCandidate.cs` — changed `class` → `record` to support `with` expressions
+- `Helpers/FileNameHelper.cs` — `GetUniqueDestinationPath(destPath, exists)`: appends `_1`, `_2`, … until no collision
+- `Forms/ConflictResolutionForm.cs` — modal dialog with `DataGridView` (File Name, Source/Dest paths, sizes, Action combobox); "Apply to all" dropdown; OK/Cancel
+- `MainForm.cs` — auto-shows dialog after Analyse when conflicts exist; stores `_conflictResolutions`; "Review Conflicts…" button re-opens dialog; Start Copy enabled only when all conflicts resolved
+- `MainForm.Designer.cs` — added `_btnReviewConflicts` (left-aligned, disabled until conflicts present)
+- `FileNameHelperTests.cs` — 6 tests: no collision, single collision, multiple collisions, extension preservation, no-extension, nested path
+- `dotnet test` — 60 passed, 0 failed
 
 ## Phase 4 — Done
 

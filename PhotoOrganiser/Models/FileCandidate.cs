@@ -1,6 +1,6 @@
 namespace PhotoOrganiser.Models;
 
-public class FileCandidate
+public record FileCandidate
 {
     public string SourcePath { get; init; } = string.Empty;
     public string FileName { get; init; } = string.Empty;
