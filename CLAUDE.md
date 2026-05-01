@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Phases 1–3 complete. Solution scaffolded, UI built, FileScanner service implemented with all 8 unit tests passing (54 total). Phase 4+ not yet implemented.
+Phases 1–4 complete. Solution scaffolded, UI built, FileScanner service implemented (54 unit tests passing). Phase 4 wired: Analyse button runs ScanAsync async, guards source==dest and dest-inside-source, populates summary label and colour-coded log, enables Start Copy only when actionable work exists. Phase 5+ not yet implemented.
 
 **Runtime note:** Only .NET 10 runtime is installed on this machine. Both projects target `net10.0-windows` (plan says net8.0 but that runtime is absent).
 

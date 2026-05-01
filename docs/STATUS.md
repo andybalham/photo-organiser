@@ -6,8 +6,8 @@
 |---|---|---|
 | 1 | Project scaffold & solution structure | ✅ Done |
 | 2 | Main form UI layout | ✅ Done |
-| 3 | File scanning service | ⬜ Not started |
-| 4 | Pre-copy analysis & confirmation | ⬜ Not started |
+| 3 | File scanning service | ✅ Done |
+| 4 | Pre-copy analysis & confirmation | ✅ Done |
 | 5 | Conflict resolution dialog | ⬜ Not started |
 | 6 | Copy engine | ⬜ Not started |
 | 7 | Post-copy summary | ⬜ Not started |
@@ -38,3 +38,27 @@
 - Form 700×550 default, 540×400 minimum, fully resizable
 - All buttons wired to stub handlers; Start Copy disabled until Phase 4 enables it
 - Builds clean: 0 warnings, 0 errors
+
+## Phase 3 — Done
+
+- `Models/FileCandidate.cs` — `SourcePath`, `FileName`, `OrganiseDate`, `DateSource`, `DestinationFolder`, `DestinationPath`, `ConflictExists`
+- `Models/DateSource.cs` — enum: `Exif`, `FileCreation`, `Undated`
+- `Models/ScanResult.cs` — `ToCopy`, `ToSkip`, `Undated` lists
+- `Services/IFileScanner.cs` + `Services/FileScanner.cs`
+- Date resolution order: EXIF `DateTimeOriginal` → EXIF `DateTime` → QuickTime/MP4 atom → `File.GetCreationTime()` → `Undated` (dates < 1900 treated as invalid)
+- Destination path: `<dest>\YYYY\MM MonthName\<file>` or `<dest>\Undated\<file>`
+- Conflict detection: same filename + same size → `ToSkip`; same filename + different size → `ConflictExists = true`
+- `FileScannerTests.cs` — 8 tests all passing
+- `dotnet test` — 54 passed, 0 failed
+
+## Phase 4 — Done
+
+- `MainForm.BtnAnalyse_Click` wired as `async void`
+- Guards: empty paths, source == destination, destination inside source (blocks scan with `MessageBox`)
+- Runs `FileScanner.ScanAsync` on background thread via `Task.Run`; UI stays responsive
+- Summary label: `Found N files. → X to copy | Y already exist | Z undated | W conflicts need review`
+- Log populated before any copy: `[SKIP]` (gray), `[UNDATED]` (orange), `[CONFLICT]` (red)
+- Start Copy enabled only when actionable files exist (to-copy or conflicts); shows "Nothing to copy." otherwise
+- Cancel button wired to `CancellationTokenSource` — cancels scan mid-flight
+- `IFileScanner` injected via field; `MainForm` remains a thin coordinator
+- Builds clean: 0 warnings, 0 errors; 54 tests still passing
