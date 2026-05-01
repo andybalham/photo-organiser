@@ -16,13 +16,17 @@
 
 ## Phase 1 — Done
 
-- `PhotoOrganiser.slnx` + `PhotoOrganiser/PhotoOrganiser.csproj` (net8.0-windows, UseWindowsForms)
+- `PhotoOrganiser.slnx` + `PhotoOrganiser/PhotoOrganiser.csproj` (net10.0-windows, UseWindowsForms)
 - `MetadataExtractor` 2.9.3 added
 - `Helpers/FileTypes.cs` — all supported image + video extensions
 - `Forms/MainForm.cs` + `MainForm.Designer.cs`
 - `Services/`, `Models/` folders ready
+- `PhotoOrganiser.Tests/PhotoOrganiser.Tests.csproj` (xUnit, net10.0-windows) added to solution
+- `FileTypesTests.cs` — 46 tests: all image/video extensions, case-insensitivity, unsupported types
+- `FileScannerTests.cs` + `CopyEngineTests.cs` — stubs (filled in Phases 3 & 6)
 - Builds clean: 0 warnings, 0 errors
-- **Pending:** `PhotoOrganiser.Tests/` xUnit project not yet created (required before Phase 3)
+- `dotnet test` — 46 passed, 0 failed
+- **Note:** targets net10.0-windows (only runtime installed on dev machine; plan specifies net8.0)
 
 ## Phase 2 — Done
 

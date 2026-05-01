@@ -10,7 +10,7 @@ A WinForms (.NET) desktop application that copies image and video files from a s
 
 | Topic | Decision |
 |---|---|
-| UI framework | WinForms (.NET 8+) |
+| UI framework | WinForms (.NET 10+) |
 | File scope | All image & video types (see Phase 1 for list) |
 | Subfolder scanning | Recursive |
 | Date priority | EXIF/embedded → File creation date |
@@ -28,7 +28,7 @@ A WinForms (.NET) desktop application that copies image and video files from a s
 
 ### Tasks
 
-1. Create a new .NET 8 WinForms solution:
+1. Create a new .NET 10 WinForms solution:
    ```
    PhotoOrganiser/
    ├── PhotoOrganiser.sln
@@ -41,7 +41,7 @@ A WinForms (.NET) desktop application that copies image and video files from a s
    │   ├── Models/
    │   └── Helpers/
    └── PhotoOrganiser.Tests/
-       ├── PhotoOrganiser.Tests.csproj   (xUnit, net8.0)
+       ├── PhotoOrganiser.Tests.csproj   (xUnit, net10.0)
        ├── FileScannerTests.cs
        ├── CopyEngineTests.cs
        └── FileTypesTests.cs
@@ -56,7 +56,7 @@ A WinForms (.NET) desktop application that copies image and video files from a s
    - **Images:** `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.webp`, `.heic`, `.heif`, `.raw`, `.cr2`, `.cr3`, `.nef`, `.arw`, `.orf`, `.rw2`, `.dng`, `.pef`, `.srw`, `.raf`
    - **Videos:** `.mp4`, `.mov`, `.avi`, `.mkv`, `.wmv`, `.m4v`, `.3gp`, `.flv`, `.mpg`, `.mpeg`, `.mts`, `.m2ts`
 
-4. Create `Program.cs` with standard WinForms entry point targeting .NET 8.
+4. Create `Program.cs` with standard WinForms entry point targeting .NET 10.
 
 ### Acceptance Criteria
 - Solution builds without errors
@@ -379,7 +379,7 @@ Phase 1  →  Phase 2  →  Phase 3  →  Phase 4  →  Phase 6  →  Phase 7  �
 
 ## Notes for Claude Code
 
-- Target **.NET 8** with `<UseWindowsForms>true</UseWindowsForms>` in the `.csproj`
+- Target **.NET 10** with `<UseWindowsForms>true</UseWindowsForms>` in the `.csproj`
 - Use `async`/`await` throughout — never `Thread` or `BackgroundWorker`
 - Use `IProgress<T>` for cross-thread UI updates — never `Control.Invoke` directly
 - Keep `MainForm` as a thin coordinator; all business logic lives in `Services/`
