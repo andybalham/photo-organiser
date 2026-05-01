@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Greenfield. Only `docs/PhotoOrganiser_ImplementationPlan.md` exists — no solution, project, or code yet. First implementation work should scaffold per Phase 1 of the plan.
+Phase 1 complete. Solution scaffolded with main project and test project. Phase 2 UI also pre-built. Phases 3+ not yet implemented.
+
+**Runtime note:** Only .NET 10 runtime is installed on this machine. Both projects target `net10.0-windows` (plan says net8.0 but that runtime is absent).
 
 ## Project
 
