@@ -14,8 +14,185 @@ partial class MainForm
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
+
+        // ── Controls ────────────────────────────────────────────────────────────
+        _tableMain          = new TableLayoutPanel();
+        _pnlSource          = new Panel();
+        _lblSource          = new Label();
+        _txtSource          = new TextBox();
+        _btnBrowseSource    = new Button();
+        _pnlDest            = new Panel();
+        _lblDest            = new Label();
+        _txtDest            = new TextBox();
+        _btnBrowseDest      = new Button();
+        _lblSummary         = new Label();
+        _rtbLog             = new RichTextBox();
+        _pnlProgress        = new Panel();
+        _progressBar        = new ProgressBar();
+        _lblProgress        = new Label();
+        _pnlButtons         = new Panel();
+        _btnAnalyse         = new Button();
+        _btnStartCopy       = new Button();
+        _btnCancel          = new Button();
+
+        _tableMain.SuspendLayout();
+        _pnlSource.SuspendLayout();
+        _pnlDest.SuspendLayout();
+        _pnlProgress.SuspendLayout();
+        _pnlButtons.SuspendLayout();
+        SuspendLayout();
+
+        // ── tableMain ───────────────────────────────────────────────────────────
+        _tableMain.Dock = DockStyle.Fill;
+        _tableMain.ColumnCount = 1;
+        _tableMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _tableMain.RowCount = 6;
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // source row
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // dest row
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));  // summary label
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));  // log (expands)
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));  // progress
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));  // buttons
+        _tableMain.Padding = new Padding(8);
+        _tableMain.Controls.Add(_pnlSource,   0, 0);
+        _tableMain.Controls.Add(_pnlDest,     0, 1);
+        _tableMain.Controls.Add(_lblSummary,  0, 2);
+        _tableMain.Controls.Add(_rtbLog,      0, 3);
+        _tableMain.Controls.Add(_pnlProgress, 0, 4);
+        _tableMain.Controls.Add(_pnlButtons,  0, 5);
+
+        // ── Source panel ────────────────────────────────────────────────────────
+        _pnlSource.Dock = DockStyle.Fill;
+        _pnlSource.Controls.Add(_btnBrowseSource);
+        _pnlSource.Controls.Add(_txtSource);
+        _pnlSource.Controls.Add(_lblSource);
+
+        _lblSource.Text = "Source:";
+        _lblSource.Width = 60;
+        _lblSource.TextAlign = ContentAlignment.MiddleLeft;
+        _lblSource.Dock = DockStyle.Left;
+
+        _txtSource.ReadOnly = true;
+        _txtSource.Dock = DockStyle.Fill;
+        _txtSource.TabIndex = 0;
+
+        _btnBrowseSource.Text = "Browse…";
+        _btnBrowseSource.Width = 80;
+        _btnBrowseSource.Dock = DockStyle.Right;
+        _btnBrowseSource.TabIndex = 1;
+        _btnBrowseSource.Click += BtnBrowseSource_Click;
+
+        // ── Dest panel ──────────────────────────────────────────────────────────
+        _pnlDest.Dock = DockStyle.Fill;
+        _pnlDest.Controls.Add(_btnBrowseDest);
+        _pnlDest.Controls.Add(_txtDest);
+        _pnlDest.Controls.Add(_lblDest);
+
+        _lblDest.Text = "Destination:";
+        _lblDest.Width = 80;
+        _lblDest.TextAlign = ContentAlignment.MiddleLeft;
+        _lblDest.Dock = DockStyle.Left;
+
+        _txtDest.ReadOnly = true;
+        _txtDest.Dock = DockStyle.Fill;
+        _txtDest.TabIndex = 2;
+
+        _btnBrowseDest.Text = "Browse…";
+        _btnBrowseDest.Width = 80;
+        _btnBrowseDest.Dock = DockStyle.Right;
+        _btnBrowseDest.TabIndex = 3;
+        _btnBrowseDest.Click += BtnBrowseDest_Click;
+
+        // ── Summary label ───────────────────────────────────────────────────────
+        _lblSummary.Dock = DockStyle.Fill;
+        _lblSummary.TextAlign = ContentAlignment.MiddleLeft;
+        _lblSummary.Text = "Select source and destination folders, then click Analyse.";
+        _lblSummary.Font = new Font(Font.FontFamily, Font.Size, FontStyle.Regular);
+
+        // ── Log area ────────────────────────────────────────────────────────────
+        _rtbLog.Dock = DockStyle.Fill;
+        _rtbLog.ReadOnly = true;
+        _rtbLog.BackColor = SystemColors.Window;
+        _rtbLog.Font = new Font("Consolas", 9F);
+        _rtbLog.ScrollBars = RichTextBoxScrollBars.Vertical;
+        _rtbLog.TabIndex = 4;
+
+        // ── Progress panel ──────────────────────────────────────────────────────
+        _pnlProgress.Dock = DockStyle.Fill;
+        _pnlProgress.Controls.Add(_progressBar);
+        _pnlProgress.Controls.Add(_lblProgress);
+
+        _lblProgress.Text = string.Empty;
+        _lblProgress.Width = 200;
+        _lblProgress.TextAlign = ContentAlignment.MiddleLeft;
+        _lblProgress.Dock = DockStyle.Right;
+
+        _progressBar.Dock = DockStyle.Fill;
+        _progressBar.Minimum = 0;
+        _progressBar.Value = 0;
+
+        // ── Buttons panel ───────────────────────────────────────────────────────
+        _pnlButtons.Dock = DockStyle.Fill;
+        _pnlButtons.Padding = new Padding(0, 4, 0, 4);
+        _pnlButtons.Controls.Add(_btnCancel);
+        _pnlButtons.Controls.Add(_btnStartCopy);
+        _pnlButtons.Controls.Add(_btnAnalyse);
+
+        _btnAnalyse.Text = "Analyse";
+        _btnAnalyse.Width = 90;
+        _btnAnalyse.Dock = DockStyle.Left;
+        _btnAnalyse.TabIndex = 5;
+        _btnAnalyse.Click += BtnAnalyse_Click;
+
+        _btnStartCopy.Text = "Start Copy";
+        _btnStartCopy.Width = 90;
+        _btnStartCopy.Dock = DockStyle.Right;
+        _btnStartCopy.Enabled = false;
+        _btnStartCopy.TabIndex = 6;
+        _btnStartCopy.Click += BtnStartCopy_Click;
+
+        _btnCancel.Text = "Cancel";
+        _btnCancel.Width = 90;
+        _btnCancel.Dock = DockStyle.Right;
+        _btnCancel.Enabled = false;
+        _btnCancel.TabIndex = 7;
+        _btnCancel.Click += BtnCancel_Click;
+
+        // ── Form ────────────────────────────────────────────────────────────────
+        AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(800, 450);
+        ClientSize = new Size(700, 550);
+        MinimumSize = new Size(540, 400);
         Text = "Photo Organiser";
+        Controls.Add(_tableMain);
+
+        _tableMain.ResumeLayout(false);
+        _pnlSource.ResumeLayout(false);
+        _pnlSource.PerformLayout();
+        _pnlDest.ResumeLayout(false);
+        _pnlDest.PerformLayout();
+        _pnlProgress.ResumeLayout(false);
+        _pnlButtons.ResumeLayout(false);
+        ResumeLayout(false);
     }
+
+    // ── Fields ──────────────────────────────────────────────────────────────────
+    private TableLayoutPanel _tableMain;
+    private Panel _pnlSource;
+    private Label _lblSource;
+    private TextBox _txtSource;
+    private Button _btnBrowseSource;
+    private Panel _pnlDest;
+    private Label _lblDest;
+    private TextBox _txtDest;
+    private Button _btnBrowseDest;
+    private Label _lblSummary;
+    private RichTextBox _rtbLog;
+    private Panel _pnlProgress;
+    private ProgressBar _progressBar;
+    private Label _lblProgress;
+    private Panel _pnlButtons;
+    private Button _btnAnalyse;
+    private Button _btnStartCopy;
+    private Button _btnCancel;
 }
