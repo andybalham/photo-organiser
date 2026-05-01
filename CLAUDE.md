@@ -34,7 +34,9 @@ Once scaffolded:
 ```
 dotnet build PhotoOrganiser.slnx
 dotnet run --project PhotoOrganiser
-dotnet test                      # if test project added
+dotnet test PhotoOrganiser.Tests
+dotnet test --filter "FullyQualifiedName~FileScannerTests"
+dotnet test --filter "FullyQualifiedName~CopyEngineTests"
 dotnet test --filter "FullyQualifiedName~FileScannerTests.ScanAsync_PrefersExifOverCreation"
 ```
 

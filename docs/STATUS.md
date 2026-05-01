@@ -22,6 +22,7 @@
 - `Forms/MainForm.cs` + `MainForm.Designer.cs`
 - `Services/`, `Models/` folders ready
 - Builds clean: 0 warnings, 0 errors
+- **Pending:** `PhotoOrganiser.Tests/` xUnit project not yet created (required before Phase 3)
 
 ## Phase 2 — Done
 

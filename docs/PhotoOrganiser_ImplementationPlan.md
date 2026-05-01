@@ -32,18 +32,24 @@ A WinForms (.NET) desktop application that copies image and video files from a s
    ```
    PhotoOrganiser/
    ├── PhotoOrganiser.sln
-   └── PhotoOrganiser/
-       ├── PhotoOrganiser.csproj
-       ├── Program.cs
-       ├── Forms/
-       │   └── MainForm.cs / MainForm.Designer.cs
-       ├── Services/
-       ├── Models/
-       └── Helpers/
+   ├── PhotoOrganiser/
+   │   ├── PhotoOrganiser.csproj
+   │   ├── Program.cs
+   │   ├── Forms/
+   │   │   └── MainForm.cs / MainForm.Designer.cs
+   │   ├── Services/
+   │   ├── Models/
+   │   └── Helpers/
+   └── PhotoOrganiser.Tests/
+       ├── PhotoOrganiser.Tests.csproj   (xUnit, net8.0)
+       ├── FileScannerTests.cs
+       ├── CopyEngineTests.cs
+       └── FileTypesTests.cs
    ```
 
 2. Add NuGet packages:
    - `MetadataExtractor` — EXIF and metadata reading for images and videos
+   - `xunit` + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` in the test project
    - No other third-party dependencies required for Phase 1
 
 3. Define supported file extensions as a constant set in a `FileTypes` static class:
@@ -56,6 +62,7 @@ A WinForms (.NET) desktop application that copies image and video files from a s
 - Solution builds without errors
 - Application launches and shows an empty form
 - `FileTypes` class exists and is unit-testable
+- `dotnet test` runs (zero tests passing is fine at this stage)
 
 ---
 
@@ -142,12 +149,26 @@ Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, Cancel
    - If yes AND `FileInfo.Length` differs: flag as `ConflictExists = true` on the candidate (to be handled in Phase 5)
    - If no: add to `ToCopy`
 
+### Unit Tests (`FileScannerTests.cs`)
+
+| Test | Scenario |
+|---|---|
+| `ScanAsync_PrefersExifOverCreation` | File with EXIF date → uses EXIF, not `GetCreationTime` |
+| `ScanAsync_FallsBackToCreationDate` | File with no EXIF → uses `File.GetCreationTime` |
+| `ScanAsync_PlacesUndatedFilesInUndatedFolder` | No date resolvable → `DestinationFolder == "Undated"` |
+| `ScanAsync_SkipsSameSizeExistingFile` | Dest file exists, same size → added to `ToSkip` |
+| `ScanAsync_FlagsConflictForDifferentSizeFile` | Dest file exists, different size → `ConflictExists == true` |
+| `ScanAsync_ExcludesUnsupportedExtensions` | `.txt`, `.docx` etc. → not scanned |
+| `ScanAsync_BuildsCorrectDestinationPath` | Date 2021-08-15 → `2021\08 August\<filename>` |
+| `ScanAsync_DateBefore1900TreatedAsUndated` | EXIF date 1800-01-01 → `Undated` |
+
 ### Acceptance Criteria
 - Correctly identifies all supported file types
 - EXIF date is preferred over file creation date
 - Files with no resolvable date land in `Undated\`
 - Existing same-size files are excluded from `ToSkip`
 - Conflicting files (same name, different size) are flagged
+- All unit tests pass
 
 ---
 
@@ -244,12 +265,25 @@ public record CopyResult(int Copied, int Skipped, int Failed, List<string> Error
 - Update status label: "Copying 45 of 391 — photo.jpg"
 - Append each result to the log `RichTextBox` (colour-coded: green = OK, orange = skip, red = error)
 
+### Unit Tests (`CopyEngineTests.cs`)
+
+| Test | Scenario |
+|---|---|
+| `CopyAsync_CopiesFileToDestination` | File copied → exists at destination path |
+| `CopyAsync_CreatesDestinationDirectory` | Dest dir missing → created automatically |
+| `CopyAsync_PreservesSourceTimestamps` | `CreationTime` + `LastWriteTime` match source after copy |
+| `CopyAsync_LogsErrorAndContinuesOnIOException` | One file throws `IOException` → error in result, remaining files copied |
+| `CopyAsync_HonoursCancellation` | Token cancelled after first file → copy stops, partial `CopyResult` returned |
+| `CopyAsync_ReportsProgressPerFile` | Progress callback invoked once per file with correct `Completed`/`Total` |
+| `CopyAsync_NeverOverwrites` | Dest file exists → `IOException` (not silent overwrite) |
+
 ### Acceptance Criteria
 - UI remains responsive during copy (async/await + Progress<T>)
 - Cancel button stops the copy cleanly after the current file completes
 - Destination folders are created automatically
 - No source files are modified or deleted
 - Errors are logged but do not abort the entire operation
+- All unit tests pass
 
 ---
 
@@ -301,6 +335,18 @@ public record CopyResult(int Copied, int Skipped, int Failed, List<string> Error
 ---
 
 ## Phase 9 — Testing Checklist
+
+### Automated (`dotnet test`)
+
+All unit tests in `PhotoOrganiser.Tests` must pass green before marking any phase complete. Run:
+
+```
+dotnet test PhotoOrganiser.Tests
+dotnet test --filter "FullyQualifiedName~FileScannerTests"
+dotnet test --filter "FullyQualifiedName~CopyEngineTests"
+```
+
+### Manual end-to-end
 
 Before marking the project complete, manually verify the following scenarios:
 
