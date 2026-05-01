@@ -10,7 +10,7 @@
 | 4 | Pre-copy analysis & confirmation | ✅ Done |
 | 5 | Conflict resolution dialog | ✅ Done |
 | 6 | Copy engine | ✅ Done |
-| 7 | Post-copy summary | ⬜ Not started |
+| 7 | Post-copy summary | ✅ Done |
 | 8 | Polish & edge cases | ⬜ Not started |
 | 9 | Testing checklist | ⬜ Not started |
 
@@ -74,6 +74,14 @@
 - Cancel button wired to `CancellationTokenSource` — cancels scan mid-flight
 - `IFileScanner` injected via field; `MainForm` remains a thin coordinator
 - Builds clean: 0 warnings, 0 errors; 54 tests still passing
+
+## Phase 7 — Done
+
+- Cancelled case: summary shows `Cancelled after N of M files.  N copied` using last progress report
+- Error log: `copy_log.txt` written to dest root only when `Failed > 0`; timestamped, one `[ERROR]` line per failure
+- Offer to open log: `MessageBox` Yes/No; opens with `Process.Start(UseShellExecute:true)`
+- UI returns to fully usable state in all exit paths (complete / cancelled / exception) via `finally`
+- `dotnet test` — 67 passed, 0 failed
 
 ## Phase 6 — Done
 

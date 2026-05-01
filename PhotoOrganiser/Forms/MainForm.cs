@@ -180,13 +180,17 @@ public partial class MainForm : Form
 
         _cts = new CancellationTokenSource();
 
+        int lastCompleted = 0;
         var progress = new Progress<CopyProgress>(p =>
         {
+            lastCompleted = p.Completed;
             _progressBar.Value = Math.Min(p.Completed, _progressBar.Maximum);
             _lblProgress.Text  = p.Total > 0 && p.Completed < p.Total
                 ? $"Copying {p.Completed + 1} of {p.Total} — {p.CurrentFile}"
                 : $"Done — {p.Total} files processed";
         });
+
+        var dest = _txtDest.Text.Trim();
 
         try
         {
@@ -207,11 +211,14 @@ public partial class MainForm : Form
                 $"[DONE] {result.Copied} copied, {result.Failed} failed, " +
                 $"{_lastScan.ToSkip.Count + skippedConflicts} skipped",
                 Color.DarkGreen);
+
+            if (result.Failed > 0)
+                OfferErrorLog(dest, result.Errors);
         }
         catch (OperationCanceledException)
         {
-            _lblSummary.Text = "Copy cancelled.";
-            AppendLog("[CANCELLED] Copy stopped by user.", Color.DarkOrange);
+            _lblSummary.Text = $"Cancelled after {lastCompleted} of {filesToCopy.Count} files.  {lastCompleted} copied";
+            AppendLog($"[CANCELLED] Stopped after {lastCompleted} of {filesToCopy.Count} files.", Color.DarkOrange);
         }
         catch (Exception ex)
         {
@@ -224,6 +231,30 @@ public partial class MainForm : Form
             _cts.Dispose();
             _cts = null;
         }
+    }
+
+    private void OfferErrorLog(string destFolder, IReadOnlyList<string> errors)
+    {
+        var logPath = Path.Combine(destFolder, "copy_log.txt");
+        try
+        {
+            var lines = new List<string> { $"Copy log — {DateTime.Now:yyyy-MM-dd HH:mm:ss}", string.Empty };
+            lines.AddRange(errors.Select(e => $"[ERROR] {e}"));
+            File.WriteAllLines(logPath, lines);
+        }
+        catch
+        {
+            return;
+        }
+
+        var open = MessageBox.Show(
+            $"{errors.Count} error(s) occurred. Open error log?\n{logPath}",
+            "Copy errors",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (open == DialogResult.Yes)
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(logPath) { UseShellExecute = true });
     }
 
     private void BtnCancel_Click(object sender, EventArgs e)
