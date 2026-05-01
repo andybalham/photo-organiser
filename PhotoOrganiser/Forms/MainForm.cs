@@ -6,6 +6,7 @@ namespace PhotoOrganiser.Forms;
 public partial class MainForm : Form
 {
     private readonly IFileScanner _scanner = new FileScanner();
+    private readonly ICopyEngine _copyEngine = new CopyEngine();
     private ScanResult? _lastScan;
     private IReadOnlyList<ConflictResolution>? _conflictResolutions;
     private CancellationTokenSource? _cts;
@@ -150,9 +151,79 @@ public partial class MainForm : Form
         }
     }
 
-    private void BtnStartCopy_Click(object sender, EventArgs e)
+    private async void BtnStartCopy_Click(object sender, EventArgs e)
     {
-        // Phase 6: implement copy logic here
+        if (_lastScan == null) return;
+
+        // Build final file list: clean files + resolved conflicts (skipped conflicts excluded)
+        var filesToCopy = _lastScan.ToCopy
+            .Where(f => !f.ConflictExists)
+            .ToList();
+
+        if (_conflictResolutions != null)
+        {
+            foreach (var r in _conflictResolutions.Where(r => r.Action == ConflictAction.Rename))
+                filesToCopy.Add(r.Candidate);
+        }
+
+        if (filesToCopy.Count == 0)
+        {
+            _lblSummary.Text = "Nothing to copy.";
+            return;
+        }
+
+        SetControlsEnabled(false);
+        _rtbLog.Clear();
+        _progressBar.Maximum = filesToCopy.Count;
+        _progressBar.Value   = 0;
+        _lblProgress.Text    = string.Empty;
+
+        _cts = new CancellationTokenSource();
+
+        var progress = new Progress<CopyProgress>(p =>
+        {
+            _progressBar.Value = Math.Min(p.Completed, _progressBar.Maximum);
+            _lblProgress.Text  = p.Total > 0 && p.Completed < p.Total
+                ? $"Copying {p.Completed + 1} of {p.Total} — {p.CurrentFile}"
+                : $"Done — {p.Total} files processed";
+        });
+
+        try
+        {
+            var result = await Task.Run(
+                () => _copyEngine.CopyAsync(filesToCopy, progress, _cts.Token),
+                _cts.Token);
+
+            var skippedConflicts = _conflictResolutions?.Count(r => r.Action == ConflictAction.Skip) ?? 0;
+
+            _lblSummary.Text =
+                $"Copy complete.  {result.Copied} copied  |  " +
+                $"{result.Failed} errors  |  {_lastScan.ToSkip.Count + skippedConflicts} skipped";
+
+            foreach (var err in result.Errors)
+                AppendLog($"[ERROR] {err}", Color.Red);
+
+            AppendLog(
+                $"[DONE] {result.Copied} copied, {result.Failed} failed, " +
+                $"{_lastScan.ToSkip.Count + skippedConflicts} skipped",
+                Color.DarkGreen);
+        }
+        catch (OperationCanceledException)
+        {
+            _lblSummary.Text = "Copy cancelled.";
+            AppendLog("[CANCELLED] Copy stopped by user.", Color.DarkOrange);
+        }
+        catch (Exception ex)
+        {
+            _lblSummary.Text = "Copy failed.";
+            AppendLog($"[ERROR] {ex.Message}", Color.Red);
+        }
+        finally
+        {
+            SetControlsEnabled(true);
+            _cts.Dispose();
+            _cts = null;
+        }
     }
 
     private void BtnCancel_Click(object sender, EventArgs e)

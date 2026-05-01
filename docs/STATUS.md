@@ -9,7 +9,7 @@
 | 3 | File scanning service | ✅ Done |
 | 4 | Pre-copy analysis & confirmation | ✅ Done |
 | 5 | Conflict resolution dialog | ✅ Done |
-| 6 | Copy engine | ⬜ Not started |
+| 6 | Copy engine | ✅ Done |
 | 7 | Post-copy summary | ⬜ Not started |
 | 8 | Polish & edge cases | ⬜ Not started |
 | 9 | Testing checklist | ⬜ Not started |
@@ -74,3 +74,14 @@
 - Cancel button wired to `CancellationTokenSource` — cancels scan mid-flight
 - `IFileScanner` injected via field; `MainForm` remains a thin coordinator
 - Builds clean: 0 warnings, 0 errors; 54 tests still passing
+
+## Phase 6 — Done
+
+- `Models/CopyProgress.cs` — record: `(int Completed, int Total, string CurrentFile)`
+- `Models/CopyResult.cs` — record: `(int Copied, int Skipped, int Failed, List<string> Errors)`
+- `Services/ICopyEngine.cs` + `Services/CopyEngine.cs`
+- Copy logic: `Directory.CreateDirectory` → `File.Copy(overwrite:false)` → preserve timestamps (`SetCreationTime` + `SetLastWriteTime`) → `IOException` logged and skipped, copy continues
+- Cancellation honoured between files via `ct.ThrowIfCancellationRequested()`
+- `MainForm.BtnStartCopy_Click` wired as `async void`; builds final file list (clean + resolved-as-rename conflicts); reports progress via `IProgress<CopyProgress>`; updates `ProgressBar`, status label, log (green OK / red ERROR / orange CANCELLED); summary label on completion
+- `CopyEngineTests.cs` — 7 tests: copies file, creates dest dir, preserves timestamps, logs error and continues, honours cancellation, reports progress per file, never overwrites
+- `dotnet test` — 67 passed, 0 failed
