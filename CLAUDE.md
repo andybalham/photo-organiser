@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Phase 1 complete. Solution scaffolded with main project and test project. Phase 2 UI also pre-built. Phases 3+ not yet implemented.
+Phases 1–3 complete. Solution scaffolded, UI built, FileScanner service implemented with all 8 unit tests passing (54 total). Phase 4+ not yet implemented.
 
 **Runtime note:** Only .NET 10 runtime is installed on this machine. Both projects target `net10.0-windows` (plan says net8.0 but that runtime is absent).
 
