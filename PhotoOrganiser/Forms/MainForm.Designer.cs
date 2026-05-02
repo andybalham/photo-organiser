@@ -152,9 +152,9 @@ partial class MainForm
         _gridSpecialDates.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         _gridSpecialDates.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         _gridSpecialDates.MultiSelect = true;
-        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",  HeaderText = "Name",           FillWeight = 40 });
-        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Month", HeaderText = "Month (1–12)",   FillWeight = 20 });
-        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Day",   HeaderText = "Day (1–31)",     FillWeight = 20 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",  HeaderText = "Name",            FillWeight = 40 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Day",   HeaderText = "Day (1–31)",      FillWeight = 20 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Month", HeaderText = "Month (1–12)",    FillWeight = 20 });
         _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Year",  HeaderText = "Year (optional)", FillWeight = 20 });
 
         // ── Summary label ───────────────────────────────────────────────────────

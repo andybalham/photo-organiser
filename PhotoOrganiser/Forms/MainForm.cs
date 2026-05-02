@@ -293,7 +293,7 @@ public partial class MainForm : Form
 
         _gridSpecialDates.Rows.Clear();
         foreach (var sd in _specialDateService.GetAll())
-            _gridSpecialDates.Rows.Add(sd.Name, sd.Month, sd.Day, sd.Year?.ToString() ?? string.Empty);
+            _gridSpecialDates.Rows.Add(sd.Name, sd.Day, sd.Month, sd.Year?.ToString() ?? string.Empty);
 
         _gridSpecialDates.CellEndEdit += GridSpecialDates_Changed;
         _gridSpecialDates.RowsRemoved += GridSpecialDates_Changed;
@@ -329,14 +329,14 @@ public partial class MainForm : Form
             var name = row.Cells[0].Value?.ToString()?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(name)) continue;
 
-            if (!int.TryParse(row.Cells[1].Value?.ToString(), out int month) || month < 1 || month > 12)
-            {
-                row.ErrorText = "Month must be 1–12";
-                continue;
-            }
-            if (!int.TryParse(row.Cells[2].Value?.ToString(), out int day) || day < 1 || day > 31)
+            if (!int.TryParse(row.Cells[1].Value?.ToString(), out int day) || day < 1 || day > 31)
             {
                 row.ErrorText = "Day must be 1–31";
+                continue;
+            }
+            if (!int.TryParse(row.Cells[2].Value?.ToString(), out int month) || month < 1 || month > 12)
+            {
+                row.ErrorText = "Month must be 1–12";
                 continue;
             }
             row.ErrorText = string.Empty;
