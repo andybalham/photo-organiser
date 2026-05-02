@@ -264,6 +264,84 @@ public class FileScannerTests : IDisposable
     }
 
     [Fact]
+    public async Task ScanAsync_SpecialDate_RoutesToSubfolder()
+    {
+        var date = new DateTime(2023, 12, 25);
+        var sd   = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
+        var svc  = new InMemorySpecialDateService([sd]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Equal(Path.Combine("2023", "12 December", "25 Xmas"), candidate.DestinationFolder);
+        Assert.Equal(Path.Combine(_destDir, "2023", "12 December", "25 Xmas", "photo.jpg"), candidate.DestinationPath);
+    }
+
+    [Fact]
+    public async Task ScanAsync_SpecialDate_NoMatch_UsesNormalPath()
+    {
+        var date = new DateTime(2023, 12, 26);
+        var sd   = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
+        var svc  = new InMemorySpecialDateService([sd]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Equal(Path.Combine("2023", "12 December"), candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_SpecialDate_OneOff_MatchesOnlyCorrectYear()
+    {
+        var sd  = new SpecialDate { Name = "Wedding", Month = 8, Day = 20, Year = 2019 };
+        var svc = new InMemorySpecialDateService([sd]);
+
+        var scannerMatch    = new TestableFileScanner(new DateTime(2019, 8, 20), svc);
+        var scannerNoMatch  = new TestableFileScanner(new DateTime(2020, 8, 20), svc);
+
+        CreatePlainJpeg("photo.jpg");
+        var match   = await scannerMatch.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+        var noMatch = await scannerNoMatch.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var c1 = match.ToCopy.Concat(match.ToSkip).Single();
+        Assert.Contains("20 Wedding", c1.DestinationFolder);
+
+        var c2 = noMatch.ToCopy.Concat(noMatch.ToSkip).Single();
+        Assert.DoesNotContain("Wedding", c2.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_SpecialDate_Undated_NotRouted()
+    {
+        var sd  = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
+        var svc = new InMemorySpecialDateService([sd]);
+        var scanner = new TestableFileScanner(returnDate: null, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.Undated.Single();
+        Assert.Equal("Undated", candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_SpecialDate_NoService_UsesNormalPath()
+    {
+        var date    = new DateTime(2023, 12, 25);
+        var scanner = new TestableFileScanner(date, specialDates: null);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Equal(Path.Combine("2023", "12 December"), candidate.DestinationFolder);
+    }
+
+    [Fact]
     public async Task ScanAsync_InaccessibleSubfolder_LoggedAndScanContinues()
     {
         CreatePlainJpeg("accessible.jpg");
@@ -299,7 +377,9 @@ public class FileScannerTests : IDisposable
 internal class TestableFileScanner : FileScanner
 {
     private readonly DateTime? _fixedDate;
-    public TestableFileScanner(DateTime? returnDate) => _fixedDate = returnDate;
+
+    public TestableFileScanner(DateTime? returnDate, ISpecialDateService? specialDates = null)
+        : base(specialDates) => _fixedDate = returnDate;
 
     protected override (DateTime date, DateSource source) ResolveDateOverride(string filePath)
     {

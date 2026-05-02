@@ -89,13 +89,13 @@ During `FileScanner.ScanAsync`, after date resolution:
 
 ## Acceptance Criteria
 
-- [ ] Annual date matches same day/month across any year.
-- [ ] One-off date matches only the specified year.
-- [ ] Matched file routed to `DD Name\` subfolder inside month folder.
-- [ ] Matched file NOT also copied to bare month folder.
-- [ ] No match → normal month folder path unchanged.
-- [ ] `Undated` files unaffected.
-- [ ] Multiple special dates on same day: first defined wins.
-- [ ] Special dates survive app restart (JSON persisted).
-- [ ] Add/Delete in UI updates JSON immediately.
-- [ ] Invalid grid input (bad month/day) shows validation error, not crash.
+- [x] Annual date matches same day/month across any year.
+- [x] One-off date matches only the specified year.
+- [x] Matched file routed to `DD Name\` subfolder inside month folder.
+- [x] Matched file NOT also copied to bare month folder.
+- [x] No match → normal month folder path unchanged.
+- [x] `Undated` files unaffected.
+- [x] Multiple special dates on same day: first defined wins.
+- [x] Special dates survive app restart (JSON persisted).
+- [x] Add/Delete in UI updates JSON immediately.
+- [x] Invalid grid input (bad month/day) shows validation error, not crash.

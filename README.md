@@ -5,6 +5,10 @@ Copies photos and videos from a source folder into a date-based folder structure
 ```
 Destination\
   2024\
+    12 December\
+      25 Xmas\
+        christmas_photo.jpg   ← matched special date
+      other_photo.jpg         ← normal December file
     01 January\
       IMG_001.jpg
   Undated\
@@ -12,6 +16,21 @@ Destination\
 ```
 
 Date is read from EXIF metadata, falling back to file creation time. Copy only — source files are never modified.
+
+## Special Dates
+
+Define named recurring or one-off dates (e.g. Christmas, birthdays, anniversaries). Files whose date matches are automatically routed to a subfolder inside the month folder.
+
+Open the **Special Dates** tab to add or remove dates:
+
+| Column | Description |
+|--------|-------------|
+| Name   | Label used for the subfolder (e.g. `Xmas`, `Birthday`) |
+| Month  | 1–12 |
+| Day    | 1–31 |
+| Year   | Optional — leave blank for an annual date, or enter a year for a one-off |
+
+Changes are saved immediately. First matching date wins when multiple entries share the same day.
 
 ## Download
 

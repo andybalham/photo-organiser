@@ -6,7 +6,8 @@ namespace PhotoOrganiser.Forms;
 
 public partial class MainForm : Form
 {
-    private readonly IFileScanner _scanner = new FileScanner();
+    private readonly ISpecialDateService _specialDateService = new SpecialDateService();
+    private IFileScanner _scanner;
     private readonly ICopyEngine _copyEngine = new CopyEngine();
     private ScanResult? _lastScan;
     private CancellationTokenSource? _cts;
@@ -14,7 +15,9 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
+        _scanner = new FileScanner(_specialDateService);
         LoadSettings();
+        LoadSpecialDates();
     }
 
     private void LoadSettings()
@@ -281,5 +284,77 @@ public partial class MainForm : Form
         _rtbLog.AppendText(text + Environment.NewLine);
         _rtbLog.SelectionColor  = _rtbLog.ForeColor;
         _rtbLog.ScrollToCaret();
+    }
+
+    private void LoadSpecialDates()
+    {
+        _gridSpecialDates.CellEndEdit -= GridSpecialDates_Changed;
+        _gridSpecialDates.RowsRemoved -= GridSpecialDates_Changed;
+
+        _gridSpecialDates.Rows.Clear();
+        foreach (var sd in _specialDateService.GetAll())
+            _gridSpecialDates.Rows.Add(sd.Name, sd.Month, sd.Day, sd.Year?.ToString() ?? string.Empty);
+
+        _gridSpecialDates.CellEndEdit += GridSpecialDates_Changed;
+        _gridSpecialDates.RowsRemoved += GridSpecialDates_Changed;
+    }
+
+    private void BtnAddSpecialDate_Click(object sender, EventArgs e)
+    {
+        _gridSpecialDates.Rows.Add(string.Empty, string.Empty, string.Empty, string.Empty);
+        var newRow = _gridSpecialDates.Rows[_gridSpecialDates.Rows.Count - 1];
+        _gridSpecialDates.CurrentCell = newRow.Cells[0];
+        _gridSpecialDates.BeginEdit(true);
+    }
+
+    private void BtnDeleteSpecialDate_Click(object sender, EventArgs e)
+    {
+        var selected = _gridSpecialDates.SelectedRows.Cast<DataGridViewRow>()
+            .Where(r => !r.IsNewRow).ToList();
+        foreach (var row in selected)
+            _gridSpecialDates.Rows.Remove(row);
+    }
+
+    private void GridSpecialDates_Changed(object? sender, EventArgs e)
+    {
+        SaveSpecialDates();
+    }
+
+    private void SaveSpecialDates()
+    {
+        var dates = new List<SpecialDate>();
+        foreach (DataGridViewRow row in _gridSpecialDates.Rows)
+        {
+            if (row.IsNewRow) continue;
+            var name = row.Cells[0].Value?.ToString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(name)) continue;
+
+            if (!int.TryParse(row.Cells[1].Value?.ToString(), out int month) || month < 1 || month > 12)
+            {
+                row.ErrorText = "Month must be 1–12";
+                continue;
+            }
+            if (!int.TryParse(row.Cells[2].Value?.ToString(), out int day) || day < 1 || day > 31)
+            {
+                row.ErrorText = "Day must be 1–31";
+                continue;
+            }
+            row.ErrorText = string.Empty;
+
+            int? year = null;
+            var yearStr = row.Cells[3].Value?.ToString()?.Trim();
+            if (!string.IsNullOrEmpty(yearStr))
+            {
+                if (!int.TryParse(yearStr, out int y))
+                {
+                    row.ErrorText = "Year must be a number";
+                    continue;
+                }
+                year = y;
+            }
+
+            dates.Add(new SpecialDate { Name = name, Month = month, Day = day, Year = year });
+        }
+        _specialDateService.Save(dates);
     }
 }

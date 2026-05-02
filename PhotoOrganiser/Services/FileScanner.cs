@@ -10,6 +10,13 @@ public class FileScanner : IFileScanner
 {
     private static readonly DateTime MinValidDate = new DateTime(1900, 1, 1);
 
+    private readonly ISpecialDateService? _specialDates;
+
+    public FileScanner(ISpecialDateService? specialDates = null)
+    {
+        _specialDates = specialDates;
+    }
+
     public async Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, CancellationToken ct, IProgress<int>? progress = null)
     {
         var result = new ScanResult();
@@ -32,9 +39,14 @@ public class FileScanner : IFileScanner
                 }
                 else
                 {
-                    destFolder = Path.Combine(
+                    var monthFolder = Path.Combine(
                         date.Year.ToString(),
                         $"{date.Month:D2} {date.ToString("MMMM")}");
+
+                    var sd = _specialDates?.Match(date);
+                    destFolder = sd != null
+                        ? Path.Combine(monthFolder, $"{date.Day:D2} {sd.Name}")
+                        : monthFolder;
                 }
 
                 var destPath = Path.Combine(destinationFolder, destFolder, fileName);

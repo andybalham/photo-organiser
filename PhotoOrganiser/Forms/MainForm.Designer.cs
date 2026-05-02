@@ -25,6 +25,13 @@ partial class MainForm
         _lblDest            = new Label();
         _txtDest            = new TextBox();
         _btnBrowseDest      = new Button();
+        _tabConfig          = new TabControl();
+        _tabPageSpecialDates = new TabPage();
+        _pnlSpecialDates    = new Panel();
+        _gridSpecialDates   = new DataGridView();
+        _pnlSpecialDatesBtns = new Panel();
+        _btnAddSpecialDate  = new Button();
+        _btnDeleteSpecialDate = new Button();
         _lblSummary         = new Label();
         _rtbLog             = new RichTextBox();
         _pnlProgress        = new Panel();
@@ -38,6 +45,10 @@ partial class MainForm
         _tableMain.SuspendLayout();
         _pnlSource.SuspendLayout();
         _pnlDest.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_gridSpecialDates).BeginInit();
+        _pnlSpecialDates.SuspendLayout();
+        _pnlSpecialDatesBtns.SuspendLayout();
+        _tabPageSpecialDates.SuspendLayout();
         _pnlProgress.SuspendLayout();
         _pnlButtons.SuspendLayout();
         SuspendLayout();
@@ -46,9 +57,10 @@ partial class MainForm
         _tableMain.Dock = DockStyle.Fill;
         _tableMain.ColumnCount = 1;
         _tableMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _tableMain.RowCount = 6;
+        _tableMain.RowCount = 7;
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // source row
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // dest row
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 175F)); // special dates tab
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));  // summary label
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));  // log (expands)
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));  // progress
@@ -56,10 +68,11 @@ partial class MainForm
         _tableMain.Padding = new Padding(8);
         _tableMain.Controls.Add(_pnlSource,   0, 0);
         _tableMain.Controls.Add(_pnlDest,     0, 1);
-        _tableMain.Controls.Add(_lblSummary,  0, 2);
-        _tableMain.Controls.Add(_rtbLog,      0, 3);
-        _tableMain.Controls.Add(_pnlProgress, 0, 4);
-        _tableMain.Controls.Add(_pnlButtons,  0, 5);
+        _tableMain.Controls.Add(_tabConfig,   0, 2);
+        _tableMain.Controls.Add(_lblSummary,  0, 3);
+        _tableMain.Controls.Add(_rtbLog,      0, 4);
+        _tableMain.Controls.Add(_pnlProgress, 0, 5);
+        _tableMain.Controls.Add(_pnlButtons,  0, 6);
 
         // ── Source panel ────────────────────────────────────────────────────────
         _pnlSource.Dock = DockStyle.Fill;
@@ -102,6 +115,47 @@ partial class MainForm
         _btnBrowseDest.Dock = DockStyle.Right;
         _btnBrowseDest.TabIndex = 3;
         _btnBrowseDest.Click += BtnBrowseDest_Click;
+
+        // ── Special Dates tab ───────────────────────────────────────────────────
+        _tabConfig.Dock = DockStyle.Fill;
+        _tabConfig.TabPages.Add(_tabPageSpecialDates);
+
+        _tabPageSpecialDates.Text = "Special Dates";
+        _tabPageSpecialDates.Padding = new Padding(4);
+        _tabPageSpecialDates.Controls.Add(_pnlSpecialDates);
+
+        _pnlSpecialDates.Dock = DockStyle.Fill;
+        _pnlSpecialDates.Controls.Add(_gridSpecialDates);
+        _pnlSpecialDates.Controls.Add(_pnlSpecialDatesBtns);
+
+        _pnlSpecialDatesBtns.Dock = DockStyle.Right;
+        _pnlSpecialDatesBtns.Width = 90;
+        _pnlSpecialDatesBtns.Padding = new Padding(4, 0, 0, 0);
+        _pnlSpecialDatesBtns.Controls.Add(_btnDeleteSpecialDate);
+        _pnlSpecialDatesBtns.Controls.Add(_btnAddSpecialDate);
+
+        _btnAddSpecialDate.Text = "Add";
+        _btnAddSpecialDate.Dock = DockStyle.Top;
+        _btnAddSpecialDate.Height = 30;
+        _btnAddSpecialDate.Click += BtnAddSpecialDate_Click;
+
+        _btnDeleteSpecialDate.Text = "Delete";
+        _btnDeleteSpecialDate.Dock = DockStyle.Top;
+        _btnDeleteSpecialDate.Height = 30;
+        _btnDeleteSpecialDate.Top = 34;
+        _btnDeleteSpecialDate.Click += BtnDeleteSpecialDate_Click;
+
+        _gridSpecialDates.Dock = DockStyle.Fill;
+        _gridSpecialDates.AllowUserToAddRows = false;
+        _gridSpecialDates.AllowUserToDeleteRows = false;
+        _gridSpecialDates.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        _gridSpecialDates.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        _gridSpecialDates.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        _gridSpecialDates.MultiSelect = true;
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",  HeaderText = "Name",           FillWeight = 40 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Month", HeaderText = "Month (1–12)",   FillWeight = 20 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Day",   HeaderText = "Day (1–31)",     FillWeight = 20 });
+        _gridSpecialDates.Columns.Add(new DataGridViewTextBoxColumn { Name = "Year",  HeaderText = "Year (optional)", FillWeight = 20 });
 
         // ── Summary label ───────────────────────────────────────────────────────
         _lblSummary.Dock = DockStyle.Fill;
@@ -171,6 +225,10 @@ partial class MainForm
         _pnlSource.PerformLayout();
         _pnlDest.ResumeLayout(false);
         _pnlDest.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_gridSpecialDates).EndInit();
+        _pnlSpecialDates.ResumeLayout(false);
+        _pnlSpecialDatesBtns.ResumeLayout(false);
+        _tabPageSpecialDates.ResumeLayout(false);
         _pnlProgress.ResumeLayout(false);
         _pnlButtons.ResumeLayout(false);
         ResumeLayout(false);
@@ -186,6 +244,13 @@ partial class MainForm
     private Label _lblDest;
     private TextBox _txtDest;
     private Button _btnBrowseDest;
+    private TabControl _tabConfig;
+    private TabPage _tabPageSpecialDates;
+    private Panel _pnlSpecialDates;
+    private DataGridView _gridSpecialDates;
+    private Panel _pnlSpecialDatesBtns;
+    private Button _btnAddSpecialDate;
+    private Button _btnDeleteSpecialDate;
     private Label _lblSummary;
     private RichTextBox _rtbLog;
     private Panel _pnlProgress;
