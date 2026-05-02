@@ -83,14 +83,21 @@ public partial class MainForm : Form
         _lastScan = null;
         _conflictResolutions = null;
         _lblSummary.Text = "Scanning…";
+        _progressBar.Style = ProgressBarStyle.Marquee;
         _progressBar.Value = 0;
         _lblProgress.Text = string.Empty;
+        Cursor = Cursors.WaitCursor;
 
         _cts = new CancellationTokenSource();
 
+        var scanProgress = new Progress<int>(n =>
+        {
+            _lblProgress.Text = $"Scanning… {n} files found";
+        });
+
         try
         {
-            var result = await Task.Run(() => _scanner.ScanAsync(source, dest, _cts.Token), _cts.Token);
+            var result = await Task.Run(() => _scanner.ScanAsync(source, dest, _cts.Token, scanProgress), _cts.Token);
             _lastScan = result;
 
             var conflicts = result.ToCopy.Count(f => f.ConflictExists);
@@ -98,13 +105,21 @@ public partial class MainForm : Form
             var total     = result.ToCopy.Count + result.ToSkip.Count;
 
             foreach (var f in result.ToSkip)
-                AppendLog($"[SKIP] {f.FileName} — already exists", Color.Gray);
+            {
+                var kb = new FileInfo(f.SourcePath).Length / 1024.0;
+                AppendLog($"[SKIP] {f.FileName} — duplicate, not copied ({kb:F0} KB)", Color.Gray);
+            }
 
             foreach (var f in result.Undated)
                 AppendLog($"[UNDATED] {f.FileName} — will copy to Undated\\", Color.DarkOrange);
 
             foreach (var f in result.ToCopy.Where(f => f.ConflictExists))
-                AppendLog($"[CONFLICT] {f.FileName} — same name, different size", Color.Red);
+            {
+                var srcKb = new FileInfo(f.SourcePath).Length / 1024.0;
+                var dstKb = new FileInfo(f.DestinationPath).Length / 1024.0;
+                var diffKb = Math.Abs(srcKb - dstKb);
+                AppendLog($"[CONFLICT] {f.FileName} — same name, different size (source: {srcKb:F0} KB, dest: {dstKb:F0} KB, diff: {diffKb:F0} KB)", Color.Red);
+            }
 
             foreach (var folder in result.InaccessibleFolders)
                 AppendLog($"[ACCESS DENIED] {folder}", Color.DarkOrange);
@@ -142,6 +157,9 @@ public partial class MainForm : Form
         }
         finally
         {
+            _progressBar.Style = ProgressBarStyle.Blocks;
+            _progressBar.Value = 0;
+            Cursor = Cursors.Default;
             SetControlsEnabled(true);
             _cts.Dispose();
             _cts = null;
@@ -206,9 +224,11 @@ public partial class MainForm : Form
 
         SetControlsEnabled(false);
         _rtbLog.Clear();
+        _progressBar.Style   = ProgressBarStyle.Blocks;
         _progressBar.Maximum = filesToCopy.Count;
         _progressBar.Value   = 0;
         _lblProgress.Text    = string.Empty;
+        Cursor = Cursors.WaitCursor;
 
         _cts = new CancellationTokenSource();
 
@@ -259,6 +279,7 @@ public partial class MainForm : Form
         }
         finally
         {
+            Cursor = Cursors.Default;
             SetControlsEnabled(true);
             _cts.Dispose();
             _cts = null;

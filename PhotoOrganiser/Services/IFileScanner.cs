@@ -4,5 +4,5 @@ namespace PhotoOrganiser.Services;
 
 public interface IFileScanner
 {
-    Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, CancellationToken ct);
+    Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, CancellationToken ct, IProgress<int>? progress = null);
 }

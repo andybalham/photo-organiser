@@ -10,15 +10,17 @@ public class FileScanner : IFileScanner
 {
     private static readonly DateTime MinValidDate = new DateTime(1900, 1, 1);
 
-    public async Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, CancellationToken ct)
+    public async Task<ScanResult> ScanAsync(string sourceFolder, string destinationFolder, CancellationToken ct, IProgress<int>? progress = null)
     {
         var result = new ScanResult();
+        int scanned = 0;
 
         await Task.Run(() =>
         {
             foreach (var filePath in EnumerateFilesSafe(sourceFolder, result))
             {
                 ct.ThrowIfCancellationRequested();
+                progress?.Report(++scanned);
 
                 var (date, dateSource) = ResolveDateOverride(filePath);
                 var fileName = Path.GetFileName(filePath);
