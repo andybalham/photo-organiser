@@ -216,6 +216,7 @@ partial class MainForm
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(700, 550);
+        Icon = new Icon(Path.Combine(AppContext.BaseDirectory, "app.ico"));
         MinimumSize = new Size(540, 400);
         StartPosition = FormStartPosition.Manual;
         Text = "Photo Organiser";
