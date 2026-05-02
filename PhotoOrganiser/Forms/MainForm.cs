@@ -24,6 +24,19 @@ public partial class MainForm : Form
     {
         _txtSource.Text = Settings.Default.SourceFolder;
         _txtDest.Text   = Settings.Default.DestinationFolder;
+
+        if (TryParseBounds(Settings.Default.WindowBounds, out var bounds))
+        {
+            if (bounds.Size.Width >= MinimumSize.Width && bounds.Size.Height >= MinimumSize.Height
+                && Screen.AllScreens.Any(s => s.WorkingArea.IntersectsWith(bounds)))
+            {
+                Size     = bounds.Size;
+                Location = bounds.Location;
+            }
+        }
+
+        if (Settings.Default.WindowMaximised)
+            WindowState = FormWindowState.Maximized;
     }
 
     private void SaveSettings()
@@ -31,6 +44,27 @@ public partial class MainForm : Form
         Settings.Default.SourceFolder      = _txtSource.Text;
         Settings.Default.DestinationFolder = _txtDest.Text;
         Settings.Default.Save();
+    }
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        base.OnFormClosing(e);
+        Settings.Default.WindowMaximised = WindowState == FormWindowState.Maximized;
+        if (WindowState == FormWindowState.Normal)
+            Settings.Default.WindowBounds = $"{Left},{Top},{Width},{Height}";
+        Settings.Default.Save();
+    }
+
+    private static bool TryParseBounds(string s, out Rectangle bounds)
+    {
+        bounds = default;
+        if (string.IsNullOrEmpty(s)) return false;
+        var p = s.Split(',');
+        if (p.Length != 4) return false;
+        if (!int.TryParse(p[0], out int x) || !int.TryParse(p[1], out int y) ||
+            !int.TryParse(p[2], out int w) || !int.TryParse(p[3], out int h)) return false;
+        bounds = new Rectangle(x, y, w, h);
+        return true;
     }
 
     private void BtnBrowseSource_Click(object sender, EventArgs e)

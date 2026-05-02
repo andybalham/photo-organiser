@@ -217,6 +217,7 @@ partial class MainForm
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(700, 550);
         MinimumSize = new Size(540, 400);
+        StartPosition = FormStartPosition.Manual;
         Text = "Photo Organiser";
         Controls.Add(_tableMain);
 

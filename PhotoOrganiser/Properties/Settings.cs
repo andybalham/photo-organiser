@@ -23,4 +23,20 @@ internal sealed class Settings : ApplicationSettingsBase
         get => (string)this[nameof(DestinationFolder)];
         set => this[nameof(DestinationFolder)] = value;
     }
+
+    [UserScopedSetting]
+    [DefaultSettingValue("")]
+    public string WindowBounds
+    {
+        get => (string)this[nameof(WindowBounds)];
+        set => this[nameof(WindowBounds)] = value;
+    }
+
+    [UserScopedSetting]
+    [DefaultSettingValue("false")]
+    public bool WindowMaximised
+    {
+        get => (bool)this[nameof(WindowMaximised)];
+        set => this[nameof(WindowMaximised)] = value;
+    }
 }
