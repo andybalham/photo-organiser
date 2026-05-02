@@ -8,5 +8,6 @@ public record FileCandidate
     public DateSource DateSource { get; init; }
     public string DestinationFolder { get; init; } = string.Empty;
     public string DestinationPath { get; init; } = string.Empty;
-    public bool ConflictExists { get; init; }
+    public bool IsDuplicate { get; init; }
+    public bool ShouldSkip { get; init; }
 }

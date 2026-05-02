@@ -32,7 +32,6 @@ partial class MainForm
         _lblProgress        = new Label();
         _pnlButtons         = new Panel();
         _btnAnalyse         = new Button();
-        _btnReviewConflicts = new Button();
         _btnStartCopy       = new Button();
         _btnCancel          = new Button();
 
@@ -137,7 +136,6 @@ partial class MainForm
         _pnlButtons.Padding = new Padding(0, 4, 0, 4);
         _pnlButtons.Controls.Add(_btnCancel);
         _pnlButtons.Controls.Add(_btnStartCopy);
-        _pnlButtons.Controls.Add(_btnReviewConflicts);
         _pnlButtons.Controls.Add(_btnAnalyse);
 
         _btnAnalyse.Text = "Analyse";
@@ -145,13 +143,6 @@ partial class MainForm
         _btnAnalyse.Dock = DockStyle.Left;
         _btnAnalyse.TabIndex = 5;
         _btnAnalyse.Click += BtnAnalyse_Click;
-
-        _btnReviewConflicts.Text = "Review Conflicts…";
-        _btnReviewConflicts.Width = 130;
-        _btnReviewConflicts.Dock = DockStyle.Left;
-        _btnReviewConflicts.Enabled = false;
-        _btnReviewConflicts.TabIndex = 6;
-        _btnReviewConflicts.Click += BtnReviewConflicts_Click;
 
         _btnStartCopy.Text = "Start Copy";
         _btnStartCopy.Width = 90;
@@ -202,7 +193,6 @@ partial class MainForm
     private Label _lblProgress;
     private Panel _pnlButtons;
     private Button _btnAnalyse;
-    private Button _btnReviewConflicts;
     private Button _btnStartCopy;
     private Button _btnCancel;
 }

@@ -9,7 +9,6 @@ public partial class MainForm : Form
     private readonly IFileScanner _scanner = new FileScanner();
     private readonly ICopyEngine _copyEngine = new CopyEngine();
     private ScanResult? _lastScan;
-    private IReadOnlyList<ConflictResolution>? _conflictResolutions;
     private CancellationTokenSource? _cts;
 
     public MainForm()
@@ -81,7 +80,6 @@ public partial class MainForm : Form
         SetControlsEnabled(false);
         _rtbLog.Clear();
         _lastScan = null;
-        _conflictResolutions = null;
         _lblSummary.Text = "Scanning…";
         _progressBar.Style = ProgressBarStyle.Marquee;
         _progressBar.Value = 0;
@@ -100,26 +98,21 @@ public partial class MainForm : Form
             var result = await Task.Run(() => _scanner.ScanAsync(source, dest, _cts.Token, scanProgress), _cts.Token);
             _lastScan = result;
 
-            var conflicts = result.ToCopy.Count(f => f.ConflictExists);
-            var toCopy    = result.ToCopy.Count(f => !f.ConflictExists);
-            var total     = result.ToCopy.Count + result.ToSkip.Count;
+            var duplicates = result.ToCopy.Count(f => f.IsDuplicate);
+            var toCopy     = result.ToCopy.Count;
+            var total      = result.ToCopy.Count + result.ToSkip.Count;
 
             foreach (var f in result.ToSkip)
             {
                 var kb = new FileInfo(f.SourcePath).Length / 1024.0;
-                AppendLog($"[SKIP] {f.FileName} — duplicate, not copied ({kb:F0} KB)", Color.Gray);
+                AppendLog($"[SKIP] {f.FileName} — already exists, not copied ({kb:F0} KB)", Color.Gray);
             }
 
             foreach (var f in result.Undated)
                 AppendLog($"[UNDATED] {f.FileName} — will copy to Undated\\", Color.DarkOrange);
 
-            foreach (var f in result.ToCopy.Where(f => f.ConflictExists))
-            {
-                var srcKb = new FileInfo(f.SourcePath).Length / 1024.0;
-                var dstKb = new FileInfo(f.DestinationPath).Length / 1024.0;
-                var diffKb = Math.Abs(srcKb - dstKb);
-                AppendLog($"[CONFLICT] {f.FileName} — same name, different size (source: {srcKb:F0} KB, dest: {dstKb:F0} KB, diff: {diffKb:F0} KB)", Color.Red);
-            }
+            foreach (var f in result.ToCopy.Where(f => f.IsDuplicate))
+                AppendLog($"[DUPLICATE] {f.FileName} — will copy to {f.DestinationPath}", Color.DarkBlue);
 
             foreach (var folder in result.InaccessibleFolders)
                 AppendLog($"[ACCESS DENIED] {folder}", Color.DarkOrange);
@@ -128,7 +121,7 @@ public partial class MainForm : Form
             {
                 _lblSummary.Text = "No supported files found in the selected folder.";
             }
-            else if (toCopy == 0 && conflicts == 0)
+            else if (toCopy == 0)
             {
                 _lblSummary.Text =
                     $"Found {total} files.  →  {result.ToSkip.Count} already exist (nothing new to copy)" +
@@ -139,11 +132,8 @@ public partial class MainForm : Form
                 _lblSummary.Text =
                     $"Found {total} files.  " +
                     $"→  {toCopy} to copy  |  {result.ToSkip.Count} already exist (will be skipped)  " +
-                    $"|  {result.Undated.Count} undated  |  {conflicts} conflicts need review" +
+                    $"|  {result.Undated.Count} undated  |  {duplicates} duplicates (will copy to Duplicates subfolder)" +
                     (result.InaccessibleFolders.Count > 0 ? $"  |  {result.InaccessibleFolders.Count} folder(s) inaccessible" : "");
-
-                if (conflicts > 0)
-                    ShowConflictDialog();
             }
         }
         catch (OperationCanceledException)
@@ -166,55 +156,11 @@ public partial class MainForm : Form
         }
     }
 
-    private void BtnReviewConflicts_Click(object sender, EventArgs e)
-    {
-        ShowConflictDialog();
-    }
-
-    private void ShowConflictDialog()
-    {
-        if (_lastScan == null) return;
-
-        var conflictFiles = _lastScan.ToCopy.Where(f => f.ConflictExists).ToList();
-        if (conflictFiles.Count == 0) return;
-
-        using var dlg = new ConflictResolutionForm(conflictFiles);
-        if (dlg.ShowDialog(this) == DialogResult.OK)
-        {
-            _conflictResolutions = dlg.Resolutions;
-            UpdateConflictLog();
-        }
-        // Cancel: leave _conflictResolutions as-is (no copy starts without resolution)
-        UpdateStartCopyState();
-    }
-
-    private void UpdateConflictLog()
-    {
-        if (_conflictResolutions == null) return;
-        foreach (var r in _conflictResolutions)
-        {
-            var label = r.Action == ConflictAction.Rename
-                ? $"[CONFLICT→RENAME] {r.Candidate.FileName} → {Path.GetFileName(r.Candidate.DestinationPath)}"
-                : $"[CONFLICT→SKIP]   {r.Candidate.FileName}";
-            var colour = r.Action == ConflictAction.Rename ? Color.DarkBlue : Color.Gray;
-            AppendLog(label, colour);
-        }
-    }
-
     private async void BtnStartCopy_Click(object sender, EventArgs e)
     {
         if (_lastScan == null) return;
 
-        // Build final file list: clean files + resolved conflicts (skipped conflicts excluded)
-        var filesToCopy = _lastScan.ToCopy
-            .Where(f => !f.ConflictExists)
-            .ToList();
-
-        if (_conflictResolutions != null)
-        {
-            foreach (var r in _conflictResolutions.Where(r => r.Action == ConflictAction.Rename))
-                filesToCopy.Add(r.Candidate);
-        }
+        var filesToCopy = _lastScan.ToCopy.ToList();
 
         if (filesToCopy.Count == 0)
         {
@@ -250,18 +196,15 @@ public partial class MainForm : Form
                 () => _copyEngine.CopyAsync(filesToCopy, progress, _cts.Token),
                 _cts.Token);
 
-            var skippedConflicts = _conflictResolutions?.Count(r => r.Action == ConflictAction.Skip) ?? 0;
-
             _lblSummary.Text =
                 $"Copy complete.  {result.Copied} copied  |  " +
-                $"{result.Failed} errors  |  {_lastScan.ToSkip.Count + skippedConflicts} skipped";
+                $"{result.Failed} errors  |  {_lastScan.ToSkip.Count} skipped";
 
             foreach (var err in result.Errors)
                 AppendLog($"[ERROR] {err}", Color.Red);
 
             AppendLog(
-                $"[DONE] {result.Copied} copied, {result.Failed} failed, " +
-                $"{_lastScan.ToSkip.Count + skippedConflicts} skipped",
+                $"[DONE] {result.Copied} copied, {result.Failed} failed, {_lastScan.ToSkip.Count} skipped",
                 Color.DarkGreen);
 
             if (result.Failed > 0)
@@ -323,26 +266,11 @@ public partial class MainForm : Form
         _btnCancel.Enabled          = !enabled;
 
         UpdateStartCopyState();
-
-        var hasConflicts = _lastScan?.ToCopy.Any(f => f.ConflictExists) ?? false;
-        _btnReviewConflicts.Enabled = enabled && hasConflicts;
     }
 
     private void UpdateStartCopyState()
     {
-        if (_lastScan == null)
-        {
-            _btnStartCopy.Enabled = false;
-            return;
-        }
-
-        var cleanCopyCount  = _lastScan.ToCopy.Count(f => !f.ConflictExists);
-        var conflictCount   = _lastScan.ToCopy.Count(f => f.ConflictExists);
-        var resolvedCount   = _conflictResolutions?.Count ?? 0;
-        var allResolved     = conflictCount == 0 || resolvedCount == conflictCount;
-
-        // Start Copy enabled when: clean files exist OR all conflicts have been resolved
-        _btnStartCopy.Enabled = (cleanCopyCount > 0 || resolvedCount > 0) && allResolved;
+        _btnStartCopy.Enabled = _lastScan?.ToCopy.Count > 0;
     }
 
     private void AppendLog(string text, Color color)

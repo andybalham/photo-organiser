@@ -44,9 +44,10 @@ public class FileScanner : IFileScanner
                 if (dateSource == DateSource.Undated)
                     result.Undated.Add(candidate);
 
-                // skip = dest exists with same size; conflict = dest exists different size; otherwise copy
+                // skip = dest exists with same size (or duplicate already in Duplicates/ with same size)
                 var destExists = File.Exists(destPath);
-                if (!candidate.ConflictExists && destExists && new FileInfo(candidate.SourcePath).Length == new FileInfo(destPath).Length)
+                if (candidate.ShouldSkip ||
+                    (!candidate.IsDuplicate && destExists && new FileInfo(candidate.SourcePath).Length == new FileInfo(destPath).Length))
                     result.ToSkip.Add(candidate);
                 else
                     result.ToCopy.Add(candidate);
@@ -60,14 +61,34 @@ public class FileScanner : IFileScanner
         string sourcePath, string fileName, DateTime date, DateSource dateSource,
         string destFolder, string destPath)
     {
-        bool conflict = false;
+        bool isDuplicate = false;
 
         if (File.Exists(destPath))
         {
             var srcLen = new FileInfo(sourcePath).Length;
             var dstLen = new FileInfo(destPath).Length;
             if (srcLen != dstLen)
-                conflict = true;
+            {
+                var dupDir = Path.Combine(Path.GetDirectoryName(destPath)!, "Duplicates");
+                var dupBase = Path.Combine(dupDir, fileName);
+
+                // If same file already exists in Duplicates, treat as skip
+                if (File.Exists(dupBase) && new FileInfo(dupBase).Length == srcLen)
+                    return new FileCandidate
+                    {
+                        SourcePath = sourcePath,
+                        FileName = fileName,
+                        OrganiseDate = date,
+                        DateSource = dateSource,
+                        DestinationFolder = destFolder,
+                        DestinationPath = dupBase,
+                        ShouldSkip = true,
+                    };
+
+                isDuplicate = true;
+                destPath = FileNameHelper.GetUniqueDestinationPath(dupBase, File.Exists);
+                destFolder = Path.Combine(destFolder, "Duplicates");
+            }
         }
 
         return new FileCandidate
@@ -78,7 +99,7 @@ public class FileScanner : IFileScanner
             DateSource = dateSource,
             DestinationFolder = destFolder,
             DestinationPath = destPath,
-            ConflictExists = conflict,
+            IsDuplicate = isDuplicate,
         };
     }
 

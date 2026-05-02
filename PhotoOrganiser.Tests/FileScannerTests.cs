@@ -168,11 +168,11 @@ public class FileScannerTests : IDisposable
         var result = await _scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
 
         Assert.Single(result.ToSkip);
-        Assert.DoesNotContain(result.ToCopy, c => !c.ConflictExists);
+        Assert.Empty(result.ToCopy);
     }
 
     [Fact]
-    public async Task ScanAsync_FlagsConflictForDifferentSizeFile()
+    public async Task ScanAsync_RoutesDuplicateToDuplicatesSubfolder()
     {
         var content = new byte[] { 1, 2, 3, 4, 5 };
         CreateFile("photo.jpg", content);
@@ -186,8 +186,30 @@ public class FileScannerTests : IDisposable
 
         var result = await _scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
 
-        var conflict = result.ToCopy.Single();
-        Assert.True(conflict.ConflictExists);
+        var duplicate = result.ToCopy.Single();
+        Assert.True(duplicate.IsDuplicate);
+        Assert.Contains("Duplicates", duplicate.DestinationPath);
+        Assert.Equal("photo.jpg", Path.GetFileName(duplicate.DestinationPath));
+    }
+
+    [Fact]
+    public async Task ScanAsync_SkipsDuplicateWhenAlreadyInDuplicatesFolder()
+    {
+        var content = new byte[] { 1, 2, 3, 4, 5 };
+        CreateFile("photo.jpg", content);
+
+        var created = File.GetCreationTime(Path.Combine(_sourceDir, "photo.jpg"));
+        var destFolder = Path.Combine(_destDir,
+            created.Year.ToString(),
+            $"{created.Month:D2} {created.ToString("MMMM")}");
+        Directory.CreateDirectory(Path.Combine(destFolder, "Duplicates"));
+        File.WriteAllBytes(Path.Combine(destFolder, "photo.jpg"), new byte[] { 9, 9 }); // different size — triggers duplicate routing
+        File.WriteAllBytes(Path.Combine(destFolder, "Duplicates", "photo.jpg"), content); // same size as source
+
+        var result = await _scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        Assert.Empty(result.ToCopy);
+        Assert.Single(result.ToSkip);
     }
 
     [Fact]
