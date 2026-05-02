@@ -14,12 +14,9 @@ public class FileScanner : IFileScanner
     {
         var result = new ScanResult();
 
-        var files = System.IO.Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories)
-            .Where(f => FileTypes.IsSupported(Path.GetExtension(f)));
-
         await Task.Run(() =>
         {
-            foreach (var filePath in files)
+            foreach (var filePath in EnumerateFilesSafe(sourceFolder, result))
             {
                 ct.ThrowIfCancellationRequested();
 
@@ -81,6 +78,39 @@ public class FileScanner : IFileScanner
             DestinationPath = destPath,
             ConflictExists = conflict,
         };
+    }
+
+    private static IEnumerable<string> EnumerateFilesSafe(string folder, ScanResult result)
+    {
+        IEnumerable<string> files;
+        try
+        {
+            files = System.IO.Directory.EnumerateFiles(folder, "*", SearchOption.TopDirectoryOnly)
+                .Where(f => FileTypes.IsSupported(Path.GetExtension(f)));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            result.InaccessibleFolders.Add(folder);
+            yield break;
+        }
+
+        foreach (var f in files)
+            yield return f;
+
+        IEnumerable<string> subDirs;
+        try
+        {
+            subDirs = System.IO.Directory.EnumerateDirectories(folder);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            result.InaccessibleFolders.Add(folder);
+            yield break;
+        }
+
+        foreach (var sub in subDirs)
+            foreach (var f in EnumerateFilesSafe(sub, result))
+                yield return f;
     }
 
     protected virtual (DateTime date, DateSource source) ResolveDateOverride(string filePath)

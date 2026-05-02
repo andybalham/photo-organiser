@@ -230,6 +230,47 @@ public class FileScannerTests : IDisposable
         Assert.Equal(DateSource.Undated, candidate.DateSource);
         Assert.Equal("Undated", candidate.DestinationFolder);
     }
+
+    [Fact]
+    public async Task ScanAsync_EmptySourceFolder_ReturnsEmptyResult()
+    {
+        var result = await _scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        Assert.Empty(result.ToCopy);
+        Assert.Empty(result.ToSkip);
+        Assert.Empty(result.Undated);
+    }
+
+    [Fact]
+    public async Task ScanAsync_InaccessibleSubfolder_LoggedAndScanContinues()
+    {
+        CreatePlainJpeg("accessible.jpg");
+
+        var lockedDir = Path.Combine(_sourceDir, "locked");
+        Directory.CreateDirectory(lockedDir);
+
+        var di = new DirectoryInfo(lockedDir);
+        var acl = di.GetAccessControl();
+        var rule = new System.Security.AccessControl.FileSystemAccessRule(
+            System.Security.Principal.WindowsIdentity.GetCurrent().Name,
+            System.Security.AccessControl.FileSystemRights.ListDirectory,
+            System.Security.AccessControl.AccessControlType.Deny);
+        acl.AddAccessRule(rule);
+        di.SetAccessControl(acl);
+
+        try
+        {
+            var result = await _scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+            Assert.Single(result.ToCopy.Concat(result.ToSkip).Concat(result.Undated).DistinctBy(c => c.SourcePath));
+            Assert.Contains(lockedDir, result.InaccessibleFolders);
+        }
+        finally
+        {
+            acl.RemoveAccessRule(rule);
+            di.SetAccessControl(acl);
+        }
+    }
 }
 
 // Testable subclass that injects a fixed resolved date (bypasses MetadataExtractor + File.GetCreationTime)

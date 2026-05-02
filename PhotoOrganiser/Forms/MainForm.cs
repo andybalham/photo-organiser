@@ -1,4 +1,5 @@
 using PhotoOrganiser.Models;
+using PhotoOrganiser.Properties;
 using PhotoOrganiser.Services;
 
 namespace PhotoOrganiser.Forms;
@@ -14,20 +15,40 @@ public partial class MainForm : Form
     public MainForm()
     {
         InitializeComponent();
+        LoadSettings();
+    }
+
+    private void LoadSettings()
+    {
+        _txtSource.Text = Settings.Default.SourceFolder;
+        _txtDest.Text   = Settings.Default.DestinationFolder;
+    }
+
+    private void SaveSettings()
+    {
+        Settings.Default.SourceFolder      = _txtSource.Text;
+        Settings.Default.DestinationFolder = _txtDest.Text;
+        Settings.Default.Save();
     }
 
     private void BtnBrowseSource_Click(object sender, EventArgs e)
     {
         using var dlg = new FolderBrowserDialog { Description = "Select source folder" };
         if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
             _txtSource.Text = dlg.SelectedPath;
+            SaveSettings();
+        }
     }
 
     private void BtnBrowseDest_Click(object sender, EventArgs e)
     {
         using var dlg = new FolderBrowserDialog { Description = "Select destination folder" };
         if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
             _txtDest.Text = dlg.SelectedPath;
+            SaveSettings();
+        }
     }
 
     private async void BtnAnalyse_Click(object sender, EventArgs e)
@@ -74,11 +95,7 @@ public partial class MainForm : Form
 
             var conflicts = result.ToCopy.Count(f => f.ConflictExists);
             var toCopy    = result.ToCopy.Count(f => !f.ConflictExists);
-
-            _lblSummary.Text =
-                $"Found {result.ToCopy.Count + result.ToSkip.Count + result.Undated.Count} files.  " +
-                $"→  {toCopy} to copy  |  {result.ToSkip.Count} already exist (will be skipped)  " +
-                $"|  {result.Undated.Count} undated  |  {conflicts} conflicts need review";
+            var total     = result.ToCopy.Count + result.ToSkip.Count;
 
             foreach (var f in result.ToSkip)
                 AppendLog($"[SKIP] {f.FileName} — already exists", Color.Gray);
@@ -89,12 +106,27 @@ public partial class MainForm : Form
             foreach (var f in result.ToCopy.Where(f => f.ConflictExists))
                 AppendLog($"[CONFLICT] {f.FileName} — same name, different size", Color.Red);
 
-            if (toCopy == 0 && conflicts == 0)
+            foreach (var folder in result.InaccessibleFolders)
+                AppendLog($"[ACCESS DENIED] {folder}", Color.DarkOrange);
+
+            if (total == 0)
             {
-                _lblSummary.Text = "Nothing to copy.";
+                _lblSummary.Text = "No supported files found in the selected folder.";
+            }
+            else if (toCopy == 0 && conflicts == 0)
+            {
+                _lblSummary.Text =
+                    $"Found {total} files.  →  {result.ToSkip.Count} already exist (nothing new to copy)" +
+                    (result.InaccessibleFolders.Count > 0 ? $"  |  {result.InaccessibleFolders.Count} folder(s) inaccessible" : "");
             }
             else
             {
+                _lblSummary.Text =
+                    $"Found {total} files.  " +
+                    $"→  {toCopy} to copy  |  {result.ToSkip.Count} already exist (will be skipped)  " +
+                    $"|  {result.Undated.Count} undated  |  {conflicts} conflicts need review" +
+                    (result.InaccessibleFolders.Count > 0 ? $"  |  {result.InaccessibleFolders.Count} folder(s) inaccessible" : "");
+
                 if (conflicts > 0)
                     ShowConflictDialog();
             }

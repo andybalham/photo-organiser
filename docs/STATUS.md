@@ -11,7 +11,7 @@
 | 5 | Conflict resolution dialog | ✅ Done |
 | 6 | Copy engine | ✅ Done |
 | 7 | Post-copy summary | ✅ Done |
-| 8 | Polish & edge cases | ⬜ Not started |
+| 8 | Polish & edge cases | ✅ Done |
 | 9 | Testing checklist | ⬜ Not started |
 
 ## Phase 1 — Done
@@ -82,6 +82,17 @@
 - Offer to open log: `MessageBox` Yes/No; opens with `Process.Start(UseShellExecute:true)`
 - UI returns to fully usable state in all exit paths (complete / cancelled / exception) via `finally`
 - `dotnet test` — 67 passed, 0 failed
+
+## Phase 8 — Done
+
+- Items 1 & 2 (src=dest, dest-in-src guards) — already implemented in Phase 4
+- Item 3 (long path support) — `app.manifest` with `<longPathAware>true</longPathAware>`; `ApplicationManifest` wired in csproj
+- Item 4 (preserve timestamps) — already implemented in Phase 6
+- Item 5 (re-run safety) — inherent: `BtnAnalyse_Click` resets `_lastScan` and re-scans; previously copied files return as `ToSkip`
+- Item 6 (empty source folder) — shows "No supported files found in the selected folder." when total=0
+- Item 7 (access denied) — `FileScanner.EnumerateFilesSafe` does per-directory recursion, catches `UnauthorizedAccessException`, adds to `ScanResult.InaccessibleFolders`; MainForm logs `[ACCESS DENIED]` per folder
+- Item 8 (settings persistence) — `Properties/Settings.cs` (`ApplicationSettingsBase`) stores `SourceFolder`/`DestinationFolder` in user.config; loaded on init, saved on Browse
+- `dotnet test` — 69 passed, 0 failed (added `ScanAsync_EmptySourceFolder_ReturnsEmptyResult`, `ScanAsync_InaccessibleSubfolder_LoggedAndScanContinues`)
 
 ## Phase 6 — Done
 
