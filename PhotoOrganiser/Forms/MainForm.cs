@@ -18,6 +18,7 @@ public partial class MainForm : Form
         _scanner = new FileScanner(_specialDateService);
         LoadSettings();
         LoadSpecialDates();
+        LoadDateRanges();
     }
 
     private void LoadSettings()
@@ -390,5 +391,75 @@ public partial class MainForm : Form
             dates.Add(new SpecialDate { Name = name, Month = month, Day = day, Year = year });
         }
         _specialDateService.Save(dates);
+    }
+
+    // ── Date Ranges ─────────────────────────────────────────────────────────────
+
+    private void LoadDateRanges()
+    {
+        _gridDateRanges.CellEndEdit -= GridDateRanges_Changed;
+        _gridDateRanges.RowsRemoved -= GridDateRanges_Changed;
+
+        _gridDateRanges.Rows.Clear();
+        foreach (var dr in _specialDateService.GetAllRanges())
+            _gridDateRanges.Rows.Add(dr.Name, dr.StartDate.ToString("dd-MM-yyyy"), dr.EndDate.ToString("dd-MM-yyyy"));
+
+        _gridDateRanges.CellEndEdit += GridDateRanges_Changed;
+        _gridDateRanges.RowsRemoved += GridDateRanges_Changed;
+    }
+
+    private void BtnAddDateRange_Click(object sender, EventArgs e)
+    {
+        _gridDateRanges.Rows.Add(string.Empty, string.Empty, string.Empty);
+        var newRow = _gridDateRanges.Rows[_gridDateRanges.Rows.Count - 1];
+        _gridDateRanges.CurrentCell = newRow.Cells[0];
+        _gridDateRanges.BeginEdit(true);
+    }
+
+    private void BtnDeleteDateRange_Click(object sender, EventArgs e)
+    {
+        var selected = _gridDateRanges.SelectedRows.Cast<DataGridViewRow>()
+            .Where(r => !r.IsNewRow).ToList();
+        foreach (var row in selected)
+            _gridDateRanges.Rows.Remove(row);
+    }
+
+    private void GridDateRanges_Changed(object? sender, EventArgs e)
+    {
+        SaveDateRanges();
+    }
+
+    private void SaveDateRanges()
+    {
+        var ranges = new List<Models.DateRange>();
+        foreach (DataGridViewRow row in _gridDateRanges.Rows)
+        {
+            if (row.IsNewRow) continue;
+            var name = row.Cells[0].Value?.ToString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrEmpty(name)) continue;
+
+            var startStr = row.Cells[1].Value?.ToString()?.Trim() ?? string.Empty;
+            var endStr   = row.Cells[2].Value?.ToString()?.Trim() ?? string.Empty;
+
+            if (!DateOnly.TryParseExact(startStr, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out var startDate))
+            {
+                row.ErrorText = "Start date must be dd-MM-yyyy";
+                continue;
+            }
+            if (!DateOnly.TryParseExact(endStr, "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None, out var endDate))
+            {
+                row.ErrorText = "End date must be dd-MM-yyyy";
+                continue;
+            }
+            if (endDate < startDate)
+            {
+                row.ErrorText = "End date must be on or after start date";
+                continue;
+            }
+            row.ErrorText = string.Empty;
+
+            ranges.Add(new Models.DateRange { Name = name, StartDate = startDate, EndDate = endDate });
+        }
+        _specialDateService.SaveRanges(ranges);
     }
 }

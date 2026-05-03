@@ -75,7 +75,7 @@ New **"Special Dates"** tab on `MainForm` with two sub-sections separated by a l
 ### Date Ranges section (separate tab panel or GroupBox below Special Dates)
 
 - `DataGridView` with columns: Name, Start Date, End Date
-  - Start Date / End Date display as `yyyy-MM-dd`; edited as text, parsed on `CellEndEdit`
+  - Start Date / End Date display as `dd-MM-yyyy`; edited as text, parsed on `CellEndEdit`
 - **Add** button — appends blank row
 - **Delete** button — removes selected row(s)
 

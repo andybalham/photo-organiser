@@ -7,4 +7,8 @@ public interface ISpecialDateService
     IReadOnlyList<SpecialDate> GetAll();
     void Save(IEnumerable<SpecialDate> dates);
     SpecialDate? Match(DateTime date);
+
+    IReadOnlyList<DateRange> GetAllRanges();
+    void SaveRanges(IEnumerable<DateRange> ranges);
+    DateRange? MatchRange(DateTime date);
 }

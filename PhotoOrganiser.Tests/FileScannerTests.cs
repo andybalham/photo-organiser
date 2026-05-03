@@ -268,7 +268,7 @@ public class FileScannerTests : IDisposable
     {
         var date = new DateTime(2023, 12, 25);
         var sd   = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
-        var svc  = new InMemorySpecialDateService([sd]);
+        var svc  = new InMemorySpecialDateService([sd], []);
         var scanner = new TestableFileScanner(date, svc);
         CreatePlainJpeg("photo.jpg");
 
@@ -284,7 +284,7 @@ public class FileScannerTests : IDisposable
     {
         var date = new DateTime(2023, 12, 26);
         var sd   = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
-        var svc  = new InMemorySpecialDateService([sd]);
+        var svc  = new InMemorySpecialDateService([sd], []);
         var scanner = new TestableFileScanner(date, svc);
         CreatePlainJpeg("photo.jpg");
 
@@ -298,7 +298,7 @@ public class FileScannerTests : IDisposable
     public async Task ScanAsync_SpecialDate_OneOff_MatchesOnlyCorrectYear()
     {
         var sd  = new SpecialDate { Name = "Wedding", Month = 8, Day = 20, Year = 2019 };
-        var svc = new InMemorySpecialDateService([sd]);
+        var svc = new InMemorySpecialDateService([sd], []);
 
         var scannerMatch    = new TestableFileScanner(new DateTime(2019, 8, 20), svc);
         var scannerNoMatch  = new TestableFileScanner(new DateTime(2020, 8, 20), svc);
@@ -318,7 +318,7 @@ public class FileScannerTests : IDisposable
     public async Task ScanAsync_SpecialDate_Undated_NotRouted()
     {
         var sd  = new SpecialDate { Name = "Xmas", Month = 12, Day = 25 };
-        var svc = new InMemorySpecialDateService([sd]);
+        var svc = new InMemorySpecialDateService([sd], []);
         var scanner = new TestableFileScanner(returnDate: null, svc);
         CreatePlainJpeg("photo.jpg");
 
@@ -339,6 +339,90 @@ public class FileScannerTests : IDisposable
 
         var candidate = result.ToCopy.Concat(result.ToSkip).Single();
         Assert.Equal(Path.Combine("2023", "12 December"), candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_DateRange_RoutesToSubfolder()
+    {
+        var date = new DateTime(2024, 8, 5);
+        var dr   = new DateRange { Name = "Holiday", StartDate = new DateOnly(2024, 8, 1), EndDate = new DateOnly(2024, 8, 14) };
+        var svc  = new InMemorySpecialDateService([], [dr]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Equal(Path.Combine("2024", "08 August", "05 Holiday"), candidate.DestinationFolder);
+        Assert.Equal(Path.Combine(_destDir, "2024", "08 August", "05 Holiday", "photo.jpg"), candidate.DestinationPath);
+    }
+
+    [Fact]
+    public async Task ScanAsync_DateRange_NoMatch_UsesNormalPath()
+    {
+        var date = new DateTime(2024, 8, 15);
+        var dr   = new DateRange { Name = "Holiday", StartDate = new DateOnly(2024, 8, 1), EndDate = new DateOnly(2024, 8, 14) };
+        var svc  = new InMemorySpecialDateService([], [dr]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Equal(Path.Combine("2024", "08 August"), candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_DateRange_CrossMonth_UsesCorrectMonthFolder()
+    {
+        var dr = new DateRange { Name = "Trip", StartDate = new DateOnly(2024, 12, 28), EndDate = new DateOnly(2025, 1, 3) };
+
+        var svcDec = new InMemorySpecialDateService([], [dr]);
+        var svcJan = new InMemorySpecialDateService([], [dr]);
+        var scannerDec = new TestableFileScanner(new DateTime(2024, 12, 30), svcDec);
+        var scannerJan = new TestableFileScanner(new DateTime(2025, 1, 2), svcJan);
+
+        CreatePlainJpeg("photo.jpg");
+
+        var resDec = await scannerDec.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+        var resJan = await scannerJan.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var cDec = resDec.ToCopy.Concat(resDec.ToSkip).Single();
+        Assert.Equal(Path.Combine("2024", "12 December", "30 Trip"), cDec.DestinationFolder);
+
+        var cJan = resJan.ToCopy.Concat(resJan.ToSkip).Single();
+        Assert.Equal(Path.Combine("2025", "01 January", "02 Trip"), cJan.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_SpecialDate_TakesPriorityOverRange()
+    {
+        var date = new DateTime(2024, 8, 1);
+        var sd   = new SpecialDate { Name = "AugFirst", Month = 8, Day = 1 };
+        var dr   = new DateRange { Name = "Holiday", StartDate = new DateOnly(2024, 8, 1), EndDate = new DateOnly(2024, 8, 14) };
+        var svc  = new InMemorySpecialDateService([sd], [dr]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Contains("AugFirst", candidate.DestinationFolder);
+        Assert.DoesNotContain("Holiday", candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_DateRange_Undated_NotRouted()
+    {
+        var dr  = new DateRange { Name = "Holiday", StartDate = new DateOnly(2024, 8, 1), EndDate = new DateOnly(2024, 8, 14) };
+        var svc = new InMemorySpecialDateService([], [dr]);
+        var scanner = new TestableFileScanner(returnDate: null, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.Undated.Single();
+        Assert.Equal("Undated", candidate.DestinationFolder);
     }
 
     [Fact]

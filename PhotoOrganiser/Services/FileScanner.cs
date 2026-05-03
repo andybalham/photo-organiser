@@ -44,9 +44,17 @@ public class FileScanner : IFileScanner
                         $"{date.Month:D2} {date.ToString("MMMM")}");
 
                     var sd = _specialDates?.Match(date);
-                    destFolder = sd != null
-                        ? Path.Combine(monthFolder, $"{date.Day:D2} {sd.Name}")
-                        : monthFolder;
+                    if (sd != null)
+                    {
+                        destFolder = Path.Combine(monthFolder, $"{date.Day:D2} {sd.Name}");
+                    }
+                    else
+                    {
+                        var dr = _specialDates?.MatchRange(date);
+                        destFolder = dr != null
+                            ? Path.Combine(monthFolder, $"{date.Day:D2} {dr.Name}")
+                            : monthFolder;
+                    }
                 }
 
                 var destPath = Path.Combine(destinationFolder, destFolder, fileName);

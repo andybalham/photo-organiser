@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Status
 
-Phases 1–4 complete + Special Dates feature. Solution scaffolded, UI built, FileScanner service implemented (84 unit tests passing). Phase 4 wired: Analyse button runs ScanAsync async, guards source==dest and dest-inside-source, populates summary label and colour-coded log, enables Start Copy only when actionable work exists. Special Dates: SpecialDate model, ISpecialDateService/SpecialDateService (JSON persistence in %LOCALAPPDATA%\PhotoOrganiser\special_dates.json), injected into FileScanner, Special Dates tab in MainForm with DataGridView + Add/Delete. Phase 5+ not yet implemented.
+Phases 1–4 complete + Special Dates + Date Ranges feature. Solution scaffolded, UI built, FileScanner service implemented (99 unit tests passing). Phase 4 wired: Analyse button runs ScanAsync async, guards source==dest and dest-inside-source, populates summary label and colour-coded log, enables Start Copy only when actionable work exists. Special Dates: SpecialDate model, ISpecialDateService/SpecialDateService (JSON persistence in %LOCALAPPDATA%\PhotoOrganiser\special_dates.json), injected into FileScanner, Special Dates tab in MainForm with DataGridView + Add/Delete. Date Ranges: DateRange model (Name, StartDate, EndDate as DateOnly), persisted to %LOCALAPPDATA%\PhotoOrganiser\date_ranges.json, MatchRange checks file date falls within range (inclusive, supports cross-month/year), checked after Special Dates (Special Date wins on overlap), separate Date Ranges tab in MainForm. Phase 5+ not yet implemented.
 
 **Runtime note:** Only .NET 10 runtime is installed on this machine. Both projects target `net10.0-windows` (plan says net8.0 but that runtime is absent).
 
