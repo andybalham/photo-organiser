@@ -25,6 +25,12 @@ partial class MainForm
         _lblDest                = new Label();
         _txtDest                = new TextBox();
         _btnBrowseDest          = new Button();
+        _pnlLinkedFile          = new Panel();
+        _btnLinkFile            = new Button();
+        _btnSaveFile            = new Button();
+        _btnUnlink              = new Button();
+        _btnOpenFolder          = new Button();
+        _lblLinkedFile          = new Label();
         _tabConfig              = new TabControl();
         _tabPageSpecialDates    = new TabPage();
         _pnlSpecialDates        = new Panel();
@@ -51,6 +57,7 @@ partial class MainForm
         _tableMain.SuspendLayout();
         _pnlSource.SuspendLayout();
         _pnlDest.SuspendLayout();
+        _pnlLinkedFile.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_gridSpecialDates).BeginInit();
         ((System.ComponentModel.ISupportInitialize)_gridDateRanges).BeginInit();
         _pnlSpecialDates.SuspendLayout();
@@ -67,22 +74,24 @@ partial class MainForm
         _tableMain.Dock = DockStyle.Fill;
         _tableMain.ColumnCount = 1;
         _tableMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _tableMain.RowCount = 7;
+        _tableMain.RowCount = 8;
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // source row
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));  // dest row
+        _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 36F));  // linked file row
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 175F)); // config tabs
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));  // summary label
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));  // log (expands)
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));  // progress
         _tableMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));  // buttons
         _tableMain.Padding = new Padding(8);
-        _tableMain.Controls.Add(_pnlSource,   0, 0);
-        _tableMain.Controls.Add(_pnlDest,     0, 1);
-        _tableMain.Controls.Add(_tabConfig,   0, 2);
-        _tableMain.Controls.Add(_lblSummary,  0, 3);
-        _tableMain.Controls.Add(_rtbLog,      0, 4);
-        _tableMain.Controls.Add(_pnlProgress, 0, 5);
-        _tableMain.Controls.Add(_pnlButtons,  0, 6);
+        _tableMain.Controls.Add(_pnlSource,     0, 0);
+        _tableMain.Controls.Add(_pnlDest,       0, 1);
+        _tableMain.Controls.Add(_pnlLinkedFile, 0, 2);
+        _tableMain.Controls.Add(_tabConfig,     0, 3);
+        _tableMain.Controls.Add(_lblSummary,    0, 4);
+        _tableMain.Controls.Add(_rtbLog,        0, 5);
+        _tableMain.Controls.Add(_pnlProgress,   0, 6);
+        _tableMain.Controls.Add(_pnlButtons,    0, 7);
 
         // ── Source panel ────────────────────────────────────────────────────────
         _pnlSource.Dock = DockStyle.Fill;
@@ -125,6 +134,46 @@ partial class MainForm
         _btnBrowseDest.Dock = DockStyle.Right;
         _btnBrowseDest.TabIndex = 3;
         _btnBrowseDest.Click += BtnBrowseDest_Click;
+
+        // ── Linked file panel ───────────────────────────────────────────────────
+        _pnlLinkedFile.Dock = DockStyle.Fill;
+        _pnlLinkedFile.Controls.Add(_lblLinkedFile);
+        _pnlLinkedFile.Controls.Add(_btnOpenFolder);
+        _pnlLinkedFile.Controls.Add(_btnUnlink);
+        _pnlLinkedFile.Controls.Add(_btnSaveFile);
+        _pnlLinkedFile.Controls.Add(_btnLinkFile);
+
+        _btnLinkFile.Text = "Link File…";
+        _btnLinkFile.Width = 80;
+        _btnLinkFile.Dock = DockStyle.Left;
+        _btnLinkFile.TabIndex = 10;
+        _btnLinkFile.Click += BtnLinkFile_Click;
+
+        _btnSaveFile.Text = "Save File…";
+        _btnSaveFile.Width = 80;
+        _btnSaveFile.Dock = DockStyle.Left;
+        _btnSaveFile.TabIndex = 13;
+        _btnSaveFile.Click += BtnSaveFile_Click;
+
+        _btnUnlink.Text = "Unlink";
+        _btnUnlink.Width = 70;
+        _btnUnlink.Dock = DockStyle.Left;
+        _btnUnlink.Enabled = false;
+        _btnUnlink.TabIndex = 11;
+        _btnUnlink.Click += BtnUnlink_Click;
+
+        _btnOpenFolder.Text = "Open Folder";
+        _btnOpenFolder.Width = 90;
+        _btnOpenFolder.Dock = DockStyle.Left;
+        _btnOpenFolder.Enabled = false;
+        _btnOpenFolder.TabIndex = 12;
+        _btnOpenFolder.Click += BtnOpenFolder_Click;
+
+        _lblLinkedFile.Text = "No file linked";
+        _lblLinkedFile.Dock = DockStyle.Fill;
+        _lblLinkedFile.TextAlign = ContentAlignment.MiddleLeft;
+        _lblLinkedFile.Padding = new Padding(6, 0, 0, 0);
+        _lblLinkedFile.ForeColor = SystemColors.GrayText;
 
         // ── Tab control ─────────────────────────────────────────────────────────
         _tabConfig.Dock = DockStyle.Fill;
@@ -277,6 +326,7 @@ partial class MainForm
         _pnlSource.PerformLayout();
         _pnlDest.ResumeLayout(false);
         _pnlDest.PerformLayout();
+        _pnlLinkedFile.ResumeLayout(false);
         ((System.ComponentModel.ISupportInitialize)_gridSpecialDates).EndInit();
         ((System.ComponentModel.ISupportInitialize)_gridDateRanges).EndInit();
         _pnlSpecialDates.ResumeLayout(false);
@@ -300,6 +350,12 @@ partial class MainForm
     private Label _lblDest;
     private TextBox _txtDest;
     private Button _btnBrowseDest;
+    private Panel _pnlLinkedFile;
+    private Button _btnLinkFile;
+    private Button _btnSaveFile;
+    private Button _btnUnlink;
+    private Button _btnOpenFolder;
+    private Label _lblLinkedFile;
     private TabControl _tabConfig;
     private TabPage _tabPageSpecialDates;
     private Panel _pnlSpecialDates;

@@ -33,11 +33,12 @@ Single set of controls placed on the main form, below the **Destination** field 
 | Control | Detail |
 |---------|--------|
 | **Link File…** button | Open file dialog (filter: `Dates files (*.dates.json)|*.dates.json|All files (*.*)|*.*`). If user picks existing file: load it (replace current data). If user picks new path: save current data there. Sets linked file. |
+| **Save File…** button | Open save-file dialog. Writes current special dates and date ranges to the chosen path. Does **not** change the linked file. Always enabled. |
 | **Unlink** button | Clears linked file path. Does not delete file or alter in-memory data. Disabled when no file linked. |
 | **Open Folder** button | Opens Windows Explorer to folder containing linked file. Disabled when no file linked. |
 | Status label | Read-only. Shows linked file path, or `"No file linked"` when unlinked. |
 
-All four controls sit in a single row/panel, visible regardless of which tab is active.
+All five controls sit in a single row/panel, visible regardless of which tab is active.
 
 ## Load / Replace Semantics
 
@@ -68,6 +69,7 @@ Existing `special_dates.json` and `date_ranges.json` remain as internal working 
 - Linking a new path saves current data to that file and saves path to settings.
 - On next app launch with linked file set, data loaded from linked file automatically.
 - Every add/delete auto-saves to linked file when one is set.
+- Save File… writes current data to chosen path without changing linked file.
 - Unlink clears path from settings; data in memory unchanged.
 - Open Folder opens Explorer to correct directory.
 - Missing linked file on startup clears path silently, no crash.

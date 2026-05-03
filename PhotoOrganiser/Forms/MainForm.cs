@@ -7,6 +7,7 @@ namespace PhotoOrganiser.Forms;
 public partial class MainForm : Form
 {
     private readonly ISpecialDateService _specialDateService = new SpecialDateService();
+    private readonly IShareableDatesService _shareableService = new ShareableDatesService();
     private IFileScanner _scanner;
     private readonly ICopyEngine _copyEngine = new CopyEngine();
     private ScanResult? _lastScan;
@@ -17,8 +18,10 @@ public partial class MainForm : Form
         InitializeComponent();
         _scanner = new FileScanner(_specialDateService);
         LoadSettings();
+        TryAutoLoadLinkedFile();
         LoadSpecialDates();
         LoadDateRanges();
+        UpdateLinkedFileUI();
     }
 
     private void LoadSettings()
@@ -391,6 +394,7 @@ public partial class MainForm : Form
             dates.Add(new SpecialDate { Name = name, Month = month, Day = day, Year = year });
         }
         _specialDateService.Save(dates);
+        AutoSaveToLinkedFile();
     }
 
     // ── Date Ranges ─────────────────────────────────────────────────────────────
@@ -461,5 +465,116 @@ public partial class MainForm : Form
             ranges.Add(new Models.DateRange { Name = name, StartDate = startDate, EndDate = endDate });
         }
         _specialDateService.SaveRanges(ranges);
+        AutoSaveToLinkedFile();
+    }
+
+    // ── Shareable Dates ──────────────────────────────────────────────────────────
+
+    private void TryAutoLoadLinkedFile()
+    {
+        var loaded = _shareableService.TryAutoLoad();
+        if (loaded == null) return;
+
+        _specialDateService.Save(loaded.Value.SpecialDates);
+        _specialDateService.SaveRanges(loaded.Value.DateRanges);
+    }
+
+    private void AutoSaveToLinkedFile()
+    {
+        _shareableService.AutoSave(
+            _specialDateService.GetAll(),
+            _specialDateService.GetAllRanges(),
+            msg => _lblLinkedFile.Text = $"Auto-save failed: {msg}");
+    }
+
+    private void UpdateLinkedFileUI()
+    {
+        var path = _shareableService.LinkedFilePath;
+        var linked = path != null;
+        _btnUnlink.Enabled     = linked;
+        _btnOpenFolder.Enabled = linked;
+        if (linked)
+        {
+            _lblLinkedFile.Text      = path!;
+            _lblLinkedFile.ForeColor = SystemColors.ControlText;
+        }
+        else
+        {
+            _lblLinkedFile.Text      = "No file linked";
+            _lblLinkedFile.ForeColor = SystemColors.GrayText;
+        }
+    }
+
+    private void BtnLinkFile_Click(object sender, EventArgs e)
+    {
+        using var dlg = new OpenFileDialog
+        {
+            Title  = "Link dates file",
+            Filter = "Dates files (*.dates.json)|*.dates.json|All files (*.*)|*.*",
+            CheckFileExists = false,
+        };
+
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+        var path = dlg.FileName;
+        var currentDates  = _specialDateService.GetAll();
+        var currentRanges = _specialDateService.GetAllRanges();
+
+        _shareableService.LinkFile(path, currentDates, currentRanges);
+
+        if (File.Exists(path))
+        {
+            var loaded = _shareableService.TryAutoLoad();
+            if (loaded != null)
+            {
+                _specialDateService.Save(loaded.Value.SpecialDates);
+                _specialDateService.SaveRanges(loaded.Value.DateRanges);
+                LoadSpecialDates();
+                LoadDateRanges();
+            }
+        }
+
+        UpdateLinkedFileUI();
+    }
+
+    private void BtnSaveFile_Click(object sender, EventArgs e)
+    {
+        using var dlg = new SaveFileDialog
+        {
+            Title            = "Save dates file",
+            Filter           = "Dates files (*.dates.json)|*.dates.json|All files (*.*)|*.*",
+            DefaultExt       = "dates.json",
+            FileName         = "dates.dates.json",
+        };
+
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+        try
+        {
+            _shareableService.SaveToFile(
+                dlg.FileName,
+                _specialDateService.GetAll(),
+                _specialDateService.GetAllRanges());
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Save failed: {ex.Message}", "Save error",
+                MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void BtnUnlink_Click(object sender, EventArgs e)
+    {
+        _shareableService.Unlink();
+        UpdateLinkedFileUI();
+    }
+
+    private void BtnOpenFolder_Click(object sender, EventArgs e)
+    {
+        var path = _shareableService.LinkedFilePath;
+        if (path == null) return;
+        var folder = Path.GetDirectoryName(path);
+        if (folder != null && Directory.Exists(folder))
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", folder) { UseShellExecute = true });
     }
 }
