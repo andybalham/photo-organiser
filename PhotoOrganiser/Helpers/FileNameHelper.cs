@@ -2,11 +2,19 @@ namespace PhotoOrganiser.Helpers;
 
 public static class FileNameHelper
 {
-    /// <summary>
-    /// Returns a destination path that doesn't collide with any existing file.
-    /// Appends _1, _2, … before the extension until a free name is found.
-    /// The <paramref name="exists"/> delegate is injected so the logic is unit-testable.
-    /// </summary>
+    private static readonly char[] InvalidFolderChars =
+        Path.GetInvalidFileNameChars().Except(['/', '\\']).ToArray();
+
+    public static string SanitiseFolderName(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        var chars = name.ToCharArray();
+        for (int i = 0; i < chars.Length; i++)
+            if (Array.IndexOf(InvalidFolderChars, chars[i]) >= 0)
+                chars[i] = '-';
+        return new string(chars).Trim();
+    }
+
     public static string GetUniqueDestinationPath(string destPath, Func<string, bool> exists)
     {
         if (!exists(destPath))

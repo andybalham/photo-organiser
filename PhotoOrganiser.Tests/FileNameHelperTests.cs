@@ -49,6 +49,38 @@ public class FileNameHelperTests
     }
 
     [Fact]
+    public void SanitiseFolderName_CleanName_Unchanged()
+    {
+        Assert.Equal("Summer Holiday", FileNameHelper.SanitiseFolderName("Summer Holiday"));
+    }
+
+    [Fact]
+    public void SanitiseFolderName_ReplacesColon()
+    {
+        Assert.Equal("Andy-s Trip", FileNameHelper.SanitiseFolderName("Andy:s Trip"));
+    }
+
+    [Fact]
+    public void SanitiseFolderName_ReplacesAllIllegalChars()
+    {
+        Assert.Equal("a-b-c-d-e-f-g-h-i", FileNameHelper.SanitiseFolderName("a:b*c?d\"e<f>g|h\0i"));
+    }
+
+    [Fact]
+    public void SanitiseFolderName_EmptyString_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, FileNameHelper.SanitiseFolderName(string.Empty));
+    }
+
+    [Fact]
+    public void SanitiseFolderName_PreservesForwardSlashAndBackslash()
+    {
+        // slashes are excluded from replacement — Path.Combine handles them
+        var result = FileNameHelper.SanitiseFolderName("a/b");
+        Assert.Equal("a/b", result);
+    }
+
+    [Fact]
     public void GetUniqueDestinationPath_PreservesDirectory()
     {
         var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { @"C:\dest\2024\01 January\photo.jpg" };

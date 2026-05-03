@@ -426,6 +426,39 @@ public class FileScannerTests : IDisposable
     }
 
     [Fact]
+    public async Task ScanAsync_SpecialDate_IllegalCharsInName_Sanitised()
+    {
+        var date = new DateTime(2023, 12, 25);
+        var sd   = new SpecialDate { Name = "Xmas: Eve/Day", Month = 12, Day = 25 };
+        var svc  = new InMemorySpecialDateService([sd], []);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Contains("Xmas- Eve/Day", candidate.DestinationFolder);
+        Assert.DoesNotContain(":", candidate.DestinationFolder);
+    }
+
+    [Fact]
+    public async Task ScanAsync_DateRange_IllegalCharsInName_Sanitised()
+    {
+        var date = new DateTime(2024, 8, 5);
+        var dr   = new DateRange { Name = "Holiday*2024?", StartDate = new DateOnly(2024, 8, 1), EndDate = new DateOnly(2024, 8, 14) };
+        var svc  = new InMemorySpecialDateService([], [dr]);
+        var scanner = new TestableFileScanner(date, svc);
+        CreatePlainJpeg("photo.jpg");
+
+        var result = await scanner.ScanAsync(_sourceDir, _destDir, CancellationToken.None);
+
+        var candidate = result.ToCopy.Concat(result.ToSkip).Single();
+        Assert.Contains("Holiday-2024-", candidate.DestinationFolder);
+        Assert.DoesNotContain("*", candidate.DestinationFolder);
+        Assert.DoesNotContain("?", candidate.DestinationFolder);
+    }
+
+    [Fact]
     public async Task ScanAsync_InaccessibleSubfolder_LoggedAndScanContinues()
     {
         CreatePlainJpeg("accessible.jpg");
