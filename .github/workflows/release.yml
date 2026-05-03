@@ -32,15 +32,9 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           --output publish
 
-      - name: Generate checksum
-        run: |
-          $hash = (Get-FileHash publish/PhotoOrganiser.exe -Algorithm SHA256).Hash
-          "$hash  PhotoOrganiser.exe" | Out-File publish/PhotoOrganiser.exe.sha256 -Encoding ascii
-
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             publish/PhotoOrganiser.exe
-            publish/PhotoOrganiser.exe.sha256
           generate_release_notes: true
