@@ -86,21 +86,42 @@ public class CopyEngineTests : IDisposable
     public async Task CopyAsync_LogsErrorAndContinuesOnIOException()
     {
         var src1 = MakeFile("src", "good.jpg");
-        var src2 = MakeFile("src", "bad.jpg");
+        // src2 has different content/size from existing dest → routes to Duplicates/, not an error
+        var src2 = MakeFile("src", "bad.jpg", "data");
 
         var destDir = Path.Combine(_tmp, "dest");
         Directory.CreateDirectory(destDir);
 
-        // Pre-create dest for bad.jpg to force IOException (overwrite:false)
         var destBad = Path.Combine(destDir, "bad.jpg");
-        File.WriteAllText(destBad, "existing");
+        File.WriteAllText(destBad, "existing content"); // different size → Duplicates
 
         var destGood = Path.Combine(destDir, "good.jpg");
         var engine   = new CopyEngine();
 
         var result = await Run(engine, [
-            MakeCandidate(src2, destBad),   // will fail
-            MakeCandidate(src1, destGood),  // should still copy
+            MakeCandidate(src2, destBad),   // different size → copied to Duplicates/
+            MakeCandidate(src1, destGood),  // normal copy
+        ]);
+
+        Assert.Equal(2, result.Copied);
+        Assert.Equal(0, result.Failed);
+        Assert.True(File.Exists(destGood));
+        Assert.True(Directory.Exists(Path.Combine(destDir, "Duplicates")));
+    }
+
+    [Fact]
+    public async Task CopyAsync_ContinuesAfterIOException()
+    {
+        // Force a real IOException by making src unreadable via missing file
+        var src1 = MakeFile("src", "good.jpg");
+        var destDir = Path.Combine(_tmp, "dest");
+        var destMissing = Path.Combine(destDir, "missing.jpg");
+        var destGood    = Path.Combine(destDir, "good.jpg");
+        var engine = new CopyEngine();
+
+        var result = await Run(engine, [
+            new FileCandidate { SourcePath = Path.Combine(_tmp, "nonexistent.jpg"), FileName = "missing.jpg", DestinationPath = destMissing },
+            MakeCandidate(src1, destGood),
         ]);
 
         Assert.Equal(1, result.Copied);
@@ -160,15 +181,16 @@ public class CopyEngineTests : IDisposable
     [Fact]
     public async Task CopyAsync_NeverOverwrites()
     {
-        var src  = MakeFile("src", "dup.jpg", "original");
+        // Same size → silent skip; dest must remain unchanged
+        var src  = MakeFile("src", "dup.jpg", "data");
         var dest = Path.Combine(_tmp, "dest", "dup.jpg");
         Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
-        File.WriteAllText(dest, "existing");
+        File.WriteAllText(dest, "data"); // same content/size
 
         var engine = new CopyEngine();
         var result = await Run(engine, [MakeCandidate(src, dest)]);
 
-        Assert.Equal(1, result.Failed);
-        Assert.Equal("existing", File.ReadAllText(dest)); // dest unchanged
+        Assert.Equal(0, result.Failed);
+        Assert.Equal("data", File.ReadAllText(dest)); // dest unchanged
     }
 }
