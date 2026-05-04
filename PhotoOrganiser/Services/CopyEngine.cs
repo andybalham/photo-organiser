@@ -1,3 +1,4 @@
+using PhotoOrganiser.Helpers;
 using PhotoOrganiser.Models;
 
 namespace PhotoOrganiser.Services;
@@ -22,6 +23,28 @@ public class CopyEngine : ICopyEngine
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(file.DestinationPath)!);
+
+                if (File.Exists(file.DestinationPath))
+                {
+                    if (new FileInfo(file.SourcePath).Length == new FileInfo(file.DestinationPath).Length)
+                    {
+                        skipped++;
+                        continue;
+                    }
+
+                    // Different size — redirect to Duplicates/
+                    var dupDir = Path.Combine(Path.GetDirectoryName(file.DestinationPath)!, "Duplicates");
+                    Directory.CreateDirectory(dupDir);
+                    var dupBase = Path.Combine(dupDir, file.FileName);
+                    var dupPath = FileNameHelper.GetUniqueDestinationPath(dupBase, File.Exists);
+                    File.Copy(file.SourcePath, dupPath, overwrite: false);
+                    var srcInfoDup = new FileInfo(file.SourcePath);
+                    File.SetCreationTime(dupPath, srcInfoDup.CreationTime);
+                    File.SetLastWriteTime(dupPath, srcInfoDup.LastWriteTime);
+                    copied++;
+                    continue;
+                }
+
                 File.Copy(file.SourcePath, file.DestinationPath, overwrite: false);
 
                 var srcInfo = new FileInfo(file.SourcePath);
