@@ -185,10 +185,12 @@ public class FileScanner : IFileScanner
             // MetadataExtractor throws on unreadable files — fall through
         }
 
-        // Fallback: file creation time
+        // Fallback: oldest of creation and modified time (modified often survives copies)
         var created = File.GetCreationTime(filePath);
-        if (created >= MinValidDate)
-            return (created, DateSource.FileCreation);
+        var modified = File.GetLastWriteTime(filePath);
+        var oldest = created < modified ? created : modified;
+        if (oldest >= MinValidDate)
+            return (oldest, DateSource.FileCreation);
 
         return (DateTime.MinValue, DateSource.Undated);
     }
